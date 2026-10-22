@@ -1,0 +1,10 @@
+.venv/
+.browser-profile/
+.browser-profile-test/
+captures.log
+scrape.out
+materials/*
+!materials/README.md
+NOTES/*
+!NOTES/README.md
+.DS_Store

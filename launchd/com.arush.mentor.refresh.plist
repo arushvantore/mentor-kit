@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd template: re-captures your portal + Slack daily at 7:10 AM.
+  NOT installed automatically. To activate (your choice, by hand):
+
+  1. Replace REPLACE_WITH_REPO_PATH with the real path to this folder,
+     in BOTH spots below.
+  2. cp com.arush.mentor.refresh.plist ~/Library/LaunchAgents/
+  3. launchctl load ~/Library/LaunchAgents/com.arush.mentor.refresh.plist
+
+  To undo: launchctl unload ~/Library/LaunchAgents/com.arush.mentor.refresh.plist
+  and delete the file.
+
+  Note: if a site session expires, that day's run logs "ACTION NEEDED" in
+  captures.log instead of saving a login page. Fix: run
+  `python3 scrape.py <that url>` once, log in, done.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.arush.mentor.refresh</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>REPLACE_WITH_REPO_PATH/refresh.sh</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>REPLACE_WITH_REPO_PATH</string>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>10</integer>
+    </dict>
+</dict>
+</plist>
