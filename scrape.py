@@ -263,7 +263,8 @@ def run_auto(targets, profile, windowed=False):
                         + " — not saved (probably still loading)")
                     action_needed += 1
                     continue
-                fixed = "auto_" + today + "_" + slugify(title)
+                url_slug = slugify(url.split("//", 1)[-1].split("?", 1)[0], 60)
+                fixed = "auto_" + today + "_" + url_slug
                 save(page, page.url, title, text, fixed_name=fixed)
             except Exception as error:
                 log("ERROR capturing " + url + " (" + str(error) + ")")
