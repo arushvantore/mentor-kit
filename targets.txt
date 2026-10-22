@@ -1,4 +1,5 @@
 # URLs the daily auto-refresh captures (one per line, # comments allowed).
 # Edit this file as your courses/channels change.
+https://my.newtonschool.co/
 https://my.newtonschool.co/course/tjj12ybxo9tt/details?tab=course&view-type=Weekly
 https://app.slack.com/client/T0BNJRD9QT1/C0BS7CY7XV0

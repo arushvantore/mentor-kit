@@ -5,7 +5,7 @@
   launchd template: re-captures your portal + Slack daily at 7:10 AM.
   NOT installed automatically. To activate (your choice, by hand):
 
-  1. Replace REPLACE_WITH_REPO_PATH with the real path to this folder,
+  1. Replace /Users/arushovantore/Desktop/exam-prep with the real path to this folder,
      in BOTH spots below.
   2. cp com.arush.mentor.refresh.plist ~/Library/LaunchAgents/
   3. launchctl load ~/Library/LaunchAgents/com.arush.mentor.refresh.plist
@@ -24,10 +24,10 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/sh</string>
-        <string>REPLACE_WITH_REPO_PATH/refresh.sh</string>
+        <string>/Users/arushovantore/Desktop/exam-prep/refresh.sh</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>REPLACE_WITH_REPO_PATH</string>
+    <string>/Users/arushovantore/Desktop/exam-prep</string>
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
