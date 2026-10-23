@@ -8,3 +8,5 @@ materials/*
 NOTES/*
 !NOTES/README.md
 .DS_Store
+*.out
+__pycache__/

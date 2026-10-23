@@ -1,0 +1,12 @@
+# Subject (course) ids the portal can switch to (&subject=<id> on hub tabs).
+# id|label
+kxz81gy1l9wm|AP-Robo-B
+bz6j6gjze3am|AP-Robo-Lab-B1
+oox5lpmmq9th|English-B
+cifgrd6gd172|Maths-1-B
+asvgh3cokrhp|Maths-1-Lab-B1
+zqngjr790187|PSP-B
+kehysh1tot83|PSP-Lab-B1
+eq7lnkj6lo7s|SnAI-B
+2s9lkovdzbs0|SnW-Lab-B1
+lernvkc4oz0k|YOGA-B1

@@ -1,0 +1,6 @@
+# HOT targets — refreshed every 2 minutes by the watch daemon
+https://my.newtonschool.co/dashboard
+https://my.newtonschool.co/course/tjj12ybxo9tt/all_assignments?tab=course&view-type=Weekly
+https://my.newtonschool.co/course/tjj12ybxo9tt/all_assessments?tab=course&view-type=Weekly
+https://my.newtonschool.co/question-of-the-day
+https://app.slack.com/client/T0BNJRD9QT1/C0BS7CY7XV0
