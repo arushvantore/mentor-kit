@@ -72,6 +72,7 @@ Then open a chat with any AI and paste one of the orders in
 | `.venv/bin/python scrape.py --export "PSP B"` | One file with **every question of one subject** (in-class, post-class, contests, solved, due — full texts) → `export/<subject>-questions.md` | On demand (hand it to a teaching AI) |
 | `.venv/bin/python export_html_pdf.py export/PSP-questions.md` | Render that file to **HTML + PDF** for sharing; public copy lives at https://arushvantore.github.io/psp-questions/ (push 3 files to repo `psp-questions`) | After an export changes |
 | `.venv/bin/python scrape.py --lectures "PSP"` | Harvest **everything under each lecture video** (in-class quiz questions via read-only views, post-class texts, `Read More` expanded) → `materials/lecture-questions/` (picked up by `--export`) | On demand; deep cycles repeat it (24 h per lecture) |
+| `.venv/bin/python slack_harvest.py [channel …]` | Full text of every message in #psp-26/#psp-b1/#psp-b2 via read-only Slack search (snippets expanded, counts must match Slack's) → `materials/slack-questions/` (picked up by `--export`) | On demand; after the teacher posts new questions/links |
 | `.venv/bin/python scrape.py <url> ...` | Login window (visible Chrome, **no button**) — sign in yourself, close when done | Only if a session expires |
 | `.venv/bin/python scrape.py --selftest` | Offline end-to-end check (4 PASS expected) | After setup or changes |
 

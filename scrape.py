@@ -29,6 +29,7 @@ MODES:
   scrape.py --selftest               offline end-to-end check
 """
 
+import csv
 import json
 import re
 import sys
@@ -848,6 +849,137 @@ def _matched_subjects(name):
 
 # ---------- export: every question of one subject, one file ----------
 
+SLACK_DIR = MATERIALS / "slack-questions"
+_CF_MONTHS = {m: i for i, m in enumerate(
+    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+     "Oct", "Nov", "Dec"], 1)}
+
+
+def _slack_export_data():
+    """Channels + linked files harvested by slack_harvest.py: message
+    counts, the relaying directive, the code list, sheet URLs, and the
+    extracted workbook text. None when nothing was harvested yet."""
+    if not SLACK_DIR.exists():
+        return None
+    channels = []
+    codes = []
+    directive = ""
+    captured = None
+    for path in sorted(SLACK_DIR.glob("psp*.md")):
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        msgs = re.search(r"^Messages: (\d+)", raw, re.M)
+        rep = re.search(r"^Results reported by Slack: (\d+)", raw, re.M)
+        cap = re.search(r"^Captured: (\d{4}-\d{2}-\d{2})", raw, re.M)
+        if cap and not captured:
+            captured = cap.group(1)
+        keys = []
+        for day, mon in re.findall(r"^(\d{1,2}) (\w{3}) at ", raw, re.M):
+            if mon in _CF_MONTHS:
+                keys.append((_CF_MONTHS[mon], int(day)))
+        if cap and "Yesterday at" in raw:
+            yesterday = datetime.fromisoformat(
+                cap.group(1)) - timedelta(days=1)
+            keys.append((yesterday.month, yesterday.day))
+        if msgs:
+            first_s, last_s = "?", "?"
+            if keys:
+                rev = {v: k for k, v in _CF_MONTHS.items()}
+                f, l = min(keys), max(keys)
+                first_s = str(f[1]) + " " + rev[f[0]]
+                last_s = str(l[1]) + " " + rev[l[0]]
+            channels.append({"name": path.stem,
+                             "msgs": int(msgs.group(1)),
+                             "reported": int(rep.group(1)) if rep else None,
+                             "first": first_s, "last": last_s})
+        for m in re.finditer(r"^(\d{2,4}) ([A-Z]\d?)\s*$", raw, re.M):
+            if (m.group(1), m.group(2)) not in codes:
+                codes.append((m.group(1), m.group(2)))
+        if not directive:
+            blocks = raw.split("\n\n")
+            for bi, block in enumerate(blocks):
+                if "solve at least 2 questions a day" not in block:
+                    continue
+                parts = [block]
+                for nxt in blocks[bi + 1:]:
+                    if re.search(r"^(Yesterday|\d{1,2} \w{3}) at "
+                                 r"\d{1,2}:\d{2} [AP]M\s*$", nxt, re.M):
+                        break
+                    parts.append(nxt)
+                body, started = [], False
+                for ln in "\n\n".join(parts).splitlines():
+                    if re.match(r"^(Yesterday|\d{1,2} \w{3}) at "
+                                r"\d{1,2}:\d{2} [AP]M\s*$", ln):
+                        started = True
+                        continue
+                    if not started:
+                        continue
+                    if re.match(r"^\d+ repl(y|ies)$", ln.strip()) or \
+                            re.search(r"\d+ \w+ ago$", ln.strip()):
+                        break
+                    body.append(ln)
+                directive = "\n".join(body).strip()
+                break
+    src = SLACK_DIR / "sources"
+    links = {}
+    try:
+        for ln in (src / "links.txt").read_text(
+                encoding="utf-8").splitlines():
+            parts = ln.split()
+            if len(parts) == 2:
+                links[parts[0]] = parts[1]
+    except Exception:
+        pass
+    titles, cf_ratings = {}, {}
+    try:
+        data = json.loads((src / "cf-problems.json").read_text(
+            encoding="utf-8"))
+        for p in data.get("result", {}).get("problems", []):
+            key = str(p.get("contestId")) + "/" + str(p.get("index"))
+            titles[key] = p.get("name") or ""
+            if p.get("rating"):
+                cf_ratings[key] = p["rating"]
+    except Exception:
+        pass
+    sheets = []
+    for i in (1, 2):
+        rows = []
+        try:
+            with (src / ("codeforces-sheet-%d.csv" % i)).open(
+                    encoding="utf-8") as fh:
+                for row in csv.DictReader(fh):
+                    link = (row.get("Problem") or "").strip()
+                    if not link:
+                        continue
+                    m = re.search(r"contest/(\d+)/problem/([A-Z]\d*)", link)
+                    if not m:
+                        m = re.search(
+                            r"problemset/problem/(\d+)/([A-Z]\d*)", link)
+                    rows.append({
+                        "n": (row.get("N") or "").strip(),
+                        "topic": (row.get("Topic") or "").strip(),
+                        "rating": (row.get("Rating") or "").strip(),
+                        "link": link,
+                        "key": (m.group(1) + "/" + m.group(2)) if m else ""})
+        except Exception:
+            continue
+        if rows:
+            sheets.append(rows)
+    workbook = ""
+    try:
+        workbook = (src / "python-functions-workbook.txt").read_text(
+            encoding="utf-8")
+    except Exception:
+        pass
+    if not channels and not sheets and not codes and not workbook:
+        return None
+    return {"channels": channels, "codes": codes, "directive": directive,
+            "links": links, "titles": titles, "ratings": cf_ratings,
+            "sheets": sheets, "workbook": workbook, "captured": captured}
+
+
 def export_subject(name):
     """--export <subject>: one file with EVERY question of that subject
     (in-class, post-class, solved, due) + full texts already captured."""
@@ -1013,6 +1145,83 @@ def export_subject(name):
             lines.append("### " + head_text.strip())
             lines.append(content.strip())
 
+    slack = _slack_export_data() if "psp" in label.lower() else None
+    slack_msgs = slack_sheet_n = slack_wb_q = 0
+    slack_code_n = 0
+    if slack:
+        slack_msgs = sum(c["msgs"] for c in slack["channels"])
+        slack_sheet_n = sum(len(s) for s in slack["sheets"])
+        slack_code_n = len(slack["codes"])
+        slack_wb_q = len(re.findall(r"^\d{1,2}\.\d+ ", slack["workbook"],
+                                    re.M))
+        lines.append("")
+        lines.append("---")
+        lines.append("## Questions shared in Slack (channels #psp-26, "
+                     "#psp-b1, #psp-b2)")
+        detail = ", ".join(
+            "#" + c["name"] + ": " + str(c["msgs"]) + " msgs ("
+            + str(c["reported"]) + " reported) " + str(c["first"]) + " -> "
+            + str(c["last"]) for c in slack["channels"])
+        lines.append("Read-only Slack search harvest (`slack_harvest.py`, "
+                     + str(slack["captured"]) + "): " + str(slack_msgs)
+                     + " messages total, every Slack-reported result "
+                     "captured. " + detail + ".")
+        if slack["directive"]:
+            lines.append("")
+            lines.append("### Standing directive (#psp-26, 9 Oct)")
+            lines.append("> " + slack["directive"].replace("\n", "\n> "))
+        for idx, rows in enumerate(slack["sheets"], 1):
+            topics = sorted({r["topic"] for r in rows if r["topic"]})
+            lines.append("")
+            lines.append("### Codeforces sheet " + str(idx) + " — "
+                         + (" & ".join(topics) if topics else "mixed")
+                         + ", " + str(len(rows)) + " problems (shared "
+                         "#psp-26, 30 Sep; view-only sheet — File > Make a "
+                         "copy to tick attempts)")
+            url = slack["links"].get("sheet" + str(idx), "")
+            if url:
+                lines.append("Sheet: " + url)
+            for r in rows:
+                rating = r["rating"] or str(
+                    slack["ratings"].get(r["key"], "") or "-")
+                name_c = slack["titles"].get(r["key"], "")
+                desc = "**" + rating + "** · " + (r["topic"] or "-")
+                if name_c:
+                    desc += " · [" + name_c + "](" + r["link"] + ")"
+                else:
+                    desc += " · " + r["link"]
+                lines.append("- " + ((r["n"] + ". ") if r["n"] else "")
+                             + desc)
+        if slack["codes"]:
+            lines.append("")
+            lines.append("### " + str(len(slack["codes"]))
+                         + "-problem Codeforces code list (shared #psp-26, "
+                         "22 Oct)")
+            for contest, index in slack["codes"]:
+                link = ("https://codeforces.com/contest/" + contest
+                        + "/problem/" + index)
+                key = contest + "/" + index
+                bit = "- " + contest + " " + index
+                if slack["titles"].get(key):
+                    bit += " — " + slack["titles"][key]
+                if slack["ratings"].get(key):
+                    bit += " (" + str(slack["ratings"][key]) + ")"
+                lines.append(bit + " — " + link)
+        if slack["workbook"]:
+            lines.append("")
+            lines.append("### Python Functions — Practice Workbook "
+                         "(shared #psp-26, 19 Oct via Google Drive) — 23 "
+                         "pages, 150 marks, units 1-13, "
+                         + str(slack_wb_q) + " numbered questions "
+                         "(full text extracted below)")
+            url = slack["links"].get("workbook", "")
+            if url:
+                lines.append("PDF: " + url)
+            lines.append("")
+            lines.append("```")
+            lines.extend(slack["workbook"].splitlines())
+            lines.append("```")
+
     lines.append("")
     lines.append("---")
     lines.append("## WHERE THESE QUESTIONS CAME FROM (sources)")
@@ -1032,6 +1241,16 @@ def export_subject(name):
     lines.append("- **Assessments API** — " + str(len(quizzes))
                  + " quiz schedules (title, window, XP earned). No "
                  "question text in the API (hidden until test start).")
+    if slack:
+        lines.append("- **Slack search harvest** (`slack_harvest.py`, "
+                     + str(slack["captured"]) + ") — " + str(slack_msgs)
+                     + " messages across #psp-26/#psp-b1/#psp-b2 (every "
+                     "Slack-reported result captured; no Send-button use): "
+                     "directive + " + str(slack_sheet_n) + " Codeforces "
+                     "sheet problem links + " + str(slack_code_n)
+                     + " code-list problems + the workbook's "
+                     + str(slack_wb_q) + " questions (Google Sheets + "
+                     "Drive file fetched read-only).")
 
     not_fetched = []
     lec_texts = []
@@ -1072,14 +1291,35 @@ def export_subject(name):
                      + str(total_q) + "), all in-class quiz questions "
                      "shown above, all contest ASSIGNMENT texts (e.g. "
                      "PSP Contest 2)")
+        if slack:
+            lines.append("")
+            lines.append("### Slack-given links (statements live at the "
+                         "URL)")
+            lines.append("- " + str(slack_sheet_n + slack_code_n)
+                         + " Codeforces problems: Slack shared links/codes "
+                         "only — open each link for the statement "
+                         "(sheets above list topic + rating).")
+            lines.append("- The two shared Google Sheets are view-only for "
+                         "you: File > Make a copy before ticking "
+                         "attempts (per the relayed directive).")
+            lines.append("- The Google Drive workbook PDF is fully "
+                         "extracted above; original link kept in "
+                         "sources section.")
 
     lines.append("")
     lines.append("---")
+    slack_bit = ""
+    if slack:
+        slack_bit = (", Slack: " + str(slack_msgs) + " msgs, "
+                     + str(slack_sheet_n) + " sheet problems, "
+                     + str(slack_code_n) + " code-list problems, "
+                     + str(slack_wb_q) + " workbook questions")
     lines.append("TOTALS: " + str(total_q) + " assignment questions ("
                  + str(solved_q) + " solved), " + str(len(quizzes))
                  + " quizzes, " + str(len(no_text))
                  + " questions without captured text, "
-                 + str(with_questions) + " lecture windows with content.")
+                 + str(with_questions) + " lecture windows with content"
+                 + slack_bit)
     if no_text:
         lines.append("Missing text: " + "; ".join(sorted(set(no_text))))
 
@@ -1094,6 +1334,10 @@ def export_subject(name):
           + str(len(quizzes)) + " | texts included: "
           + str(total_q - len(no_text)) + " | lecture windows: "
           + str(with_questions))
+    if slack:
+        print("  slack: " + str(slack_msgs) + " msgs | sheet problems: "
+              + str(slack_sheet_n) + " | code list: " + str(slack_code_n)
+              + " | workbook questions: " + str(slack_wb_q))
     return 0
 
 

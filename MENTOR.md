@@ -28,6 +28,10 @@ The system around you (all read automatically, no user effort):
   quiz schedules, attendance totals.
 - `materials/lecture-questions/` — everything under each lecture video
   (post-class texts + in-class quiz questions, read-only captures).
+- `materials/slack-questions/` — Slack search harvest (`slack_harvest.py`,
+  read-only): full text of every message in #psp-26/#psp-b1/#psp-b2 +
+  `sources/` (the 2 shared Codeforces sheets as CSV, the shared Drive
+  workbook as text, share links). Picked up by `--export`.
 - `PLAN.md`, `STATUS.md`, `NOTES/` — your maintained files.
 - `captures.log` — pipeline health (`ACTION NEEDED` = session expired).
 
@@ -42,6 +46,12 @@ The system around you (all read automatically, no user effort):
   → push the 3 files to the public repo `psp-questions` and the site
   updates itself. The document ENDS with `WHERE THESE QUESTIONS CAME
   FROM` + `NOT FETCHED` — never claim those gaps are covered.
+- The export INCLUDES everything given in Slack: `.venv/bin/python
+  slack_harvest.py` re-reads #psp-26/#psp-b1/#psp-b2 (read-only search,
+  snippets expanded; result counts must match Slack's) → `--export`
+  pulls it in. Shared links (2 Codeforces sheets, Drive workbook) are
+  re-downloaded into `materials/slack-questions/sources/` if the teacher
+  posts new ones.
 
 ---
 
@@ -125,6 +135,9 @@ and question counts instead.
 .venv/bin/python scrape.py --lectures "PSP"      # questions below lecture
                                                  # videos (all subjects
                                                  # matching "PSP")
+.venv/bin/python slack_harvest.py                # full text of every
+                                                 # message in the psp
+                                                 # Slack channels
 .venv/bin/python scrape.py --selftest           # health: expect 4 PASS
 # if ACTION NEEDED (session expired):
 launchctl unload ~/Library/LaunchAgents/com.arush.mentor.watch.plist
@@ -170,6 +183,7 @@ launchctl load   ~/Library/LaunchAgents/com.arush.mentor.watch.plist
 | "Give me ALL {subject} questions to teach me" | `.venv/bin/python scrape.py --export "{subject}"` → hand `export/<subject>-questions.md` to the tutor (or teach from it yourself) |
 | "Give me a public link / PDF to show anyone" | Already live: https://arushvantore.github.io/psp-questions/ (+ PDF above). To refresh after new captures: `--export` → `export_html_pdf.py` → push `index.html`, `questions.md`, `PSP-questions.pdf` to GitHub repo `psp-questions` |
 | "Questions shown BELOW the lecture videos" | `.venv/bin/python scrape.py --lectures "{subject}"` → `--export "{subject}"` → per-lecture sections are in the same file; `## NOT FETCHED` section lists what only the human can open (`Attempt Now` / `Start Test`) |
+| "What questions were given in Slack?" | Already in `--export`: 97 Codeforces sheet problems + 12-code list + the 23-page functions workbook (`materials/slack-questions/`); refresh with `slack_harvest.py`. Statements of CF problems live at the links (not fetched). |
 | "Refresh everything" | `./refresh.sh` → re-read → update STATUS/PLAN |
 | "Exam moved to {date}" | Rebuild PLAN backward from exam − 5 → flag honestly if behind |
 
