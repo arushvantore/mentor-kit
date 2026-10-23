@@ -980,6 +980,131 @@ def _slack_export_data():
             "sheets": sheets, "workbook": workbook, "captured": captured}
 
 
+# ---------- math slack (m1 channels + math blocks of shared channels) ----
+
+_MATH_FULL = ["m1-26", "m1-b1"]
+_MATH_MIXED = ["academic-announcement-26", "general-announcements-26",
+               "student-progression-batch-a", "student-progression-batch-b"]
+_MATHY = re.compile(
+    r"maths?|m1[- _]|quadratic|inequalit|logarithm|modulo|divisib|"
+    r"hcf|lcm|euclidean|algebraic|precalculus|number theory|"
+    r"lecture sheet|lab sheet|worksheet|learning tracker", re.I)
+
+
+def _math_slack_data():
+    """Math content of the Slack harvest: the two m1 channels in full
+    plus math-relevant messages of the four mixed channels; the official
+    contest/IA-1 syllabi; shared file links; the learning-tracker CSV."""
+    if not SLACK_DIR.exists():
+        return None
+    channels = []
+    captured = None
+    m1_blocks = []
+    mixed_blocks = []
+    contest1 = contest2 = ia1 = ""
+    paper_url = hint_url = ""
+    books = []
+    for name in _MATH_FULL + _MATH_MIXED:
+        path = SLACK_DIR / (name + ".md")
+        if not path.exists():
+            continue
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        msgs = re.search(r"^Messages: (\d+)", raw, re.M)
+        rep = re.search(r"^Results reported by Slack: (\d+)", raw, re.M)
+        cap = re.search(r"^Captured: (\d{4}-\d{2}-\d{2})", raw, re.M)
+        if cap and not captured:
+            captured = cap.group(1)
+        if msgs:
+            channels.append({"name": name, "msgs": int(msgs.group(1)),
+                             "reported": int(rep.group(1)) if rep
+                             else None})
+        blocks = raw.split("\n\n")
+        for i, block in enumerate(blocks):
+            if not re.search(r"^(Yesterday|\d{1,2} \w{3}) at "
+                             r"\d{1,2}:\d{2} [AP]M\s*$", block, re.M):
+                continue
+            body = block
+            j = i + 1
+            while j < len(blocks) and not re.search(
+                    r"^(Yesterday|\d{1,2} \w{3}) at "
+                    r"\d{1,2}:\d{2} [AP]M\s*$", blocks[j], re.M):
+                body += "\n\n" + blocks[j]
+                j += 1
+            if name in _MATH_FULL:
+                m1_blocks.append((name, body))
+            elif _MATHY.search(body):
+                mixed_blocks.append((name, body))
+            flat = body
+            if "Math-1 Contest 1" in flat or (
+                    "Math-1 Contest 2 Syllabus" not in flat
+                    and "Course Syllabus: Chapters 1" in flat):
+                m = re.search(r"(Course Syllabus:.*?)\s*(Show less|$)",
+                              flat, re.S)
+                if m and not contest1:
+                    contest1 = m.group(1).strip()
+            if "Math-1 Contest 2 Syllabus" in flat:
+                m = re.search(r"(Math-1 Contest 2 Syllabus.*?)"
+                              r"\s*(Please prepare|$)", flat, re.S)
+                if m:
+                    contest2 = m.group(1).strip()
+            if "MATH IA-1 Syllabus" in flat:
+                m = re.search(r"MATH IA-1 Syllabus:\s*\n+(.*)", flat, re.S)
+                if m:
+                    ia1 = m.group(1).strip().replace("\n(edited)", "")
+            for m in re.finditer(
+                    r"files\.slack\.com/files-pri/\S+?/download/(\S+?)\?",
+                    flat):
+                fn = m.group(1)
+                url = m.group(0).rstrip("?")
+                if "m1_contest_1" in fn:
+                    paper_url = "https://" + url
+                if fn.endswith(".jpg") or fn.endswith(".png"):
+                    hint_url = "https://" + url
+                if re.search(r"precalculus|challenges_and|discrete_math|"
+                             r"david_burton", fn, re.I):
+                    title = fn.replace("_", " ").rsplit(".", 1)[0]
+                    if title not in books:
+                        books.append(title)
+    tracker = []
+    src = SLACK_DIR / "sources" / "math" / "maths-tracker.csv"
+    try:
+        with src.open(encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                if (row.get("Lecture") or row.get("(Sub)Topics")):
+                    tracker.append(row)
+    except Exception:
+        pass
+    paper_text = ""
+    ptxt = SLACK_DIR / "sources" / "math" / "m1-contest-1.txt"
+    try:
+        paper_text = ptxt.read_text(encoding="utf-8").strip()
+    except Exception:
+        pass
+    ws6_text = ""
+    try:
+        ws6_text = (SLACK_DIR / "sources" / "math" / "l6.txt"
+                    ).read_text(encoding="utf-8").strip()
+    except Exception:
+        pass
+    ws6_url = ""
+    for m in re.finditer(
+            r"https://files\.slack\.com/files-pri/\S+?/download/l_6\.pdf\?",
+            "\n".join(b for _, b in m1_blocks)):
+        ws6_url = m.group(0).rstrip("?")
+        break
+    if not channels:
+        return None
+    return {"channels": channels, "captured": captured,
+            "m1_blocks": m1_blocks, "mixed_blocks": mixed_blocks,
+            "contest1": contest1, "contest2": contest2, "ia1": ia1,
+            "paper_url": paper_url, "hint_url": hint_url, "books": books,
+            "tracker": tracker, "paper_text": paper_text,
+            "ws6_text": ws6_text, "ws6_url": ws6_url}
+
+
 def export_subject(name):
     """--export <subject>: one file with EVERY question of that subject
     (in-class, post-class, solved, due) + full texts already captured."""
@@ -1003,10 +1128,13 @@ def export_subject(name):
     quizzes = [a for a in state.get("assessments", {}).values()
                if is_this(a)]
     if not assignments and not quizzes:
-        print("No data found for '" + name + "'. Known subjects:")
-        for line in read_lines(SUBJECTS_FILE):
-            print("  " + line)
-        return 1
+        has_lec = any(list(LECTQ_DIR.glob(sid + "_*.md"))
+                      for sid in matched_sids)
+        if not has_lec:
+            print("No data found for '" + name + "'. Known subjects:")
+            for line in read_lines(SUBJECTS_FILE):
+                print("  " + line)
+            return 1
 
     texts = {}
     for path in sorted(QUESTIONS.glob("live_*.md")):
@@ -1126,26 +1254,29 @@ def export_subject(name):
     for sid in matched_sids:
         lecture_files.extend(sorted(LECTQ_DIR.glob(sid + "_*.md")))
     with_questions = 0
-    if lecture_files:
+    lec_sections = []
+    for path in lecture_files:
+        raw = path.read_text(encoding="utf-8")
+        head = raw.split("\n---\n", 1)
+        head_text = head[0].lstrip("# ").split("\n")[0]
+        content = head[1] if len(head) == 2 else raw
+        if "(no questions below this lecture" in content and (
+                "Q1." not in content
+                and "QUESTION 1" not in content
+                and "Classroom Quiz" not in content):
+            continue
+        with_questions += 1
+        lec_sections.append("")
+        lec_sections.append("### " + head_text.strip())
+        lec_sections.append(content.strip())
+    if lec_sections:
         lines.append("")
         lines.append("---")
         lines.append("## Questions below lecture videos (per lecture)")
-        for path in lecture_files:
-            raw = path.read_text(encoding="utf-8")
-            head = raw.split("\n---\n", 1)
-            head_text = head[0].lstrip("# ").split("\n")[0]
-            content = head[1] if len(head) == 2 else raw
-            if "(no questions below this lecture" in content and (
-                    "Q1." not in content
-                    and "QUESTION 1" not in content
-                    and "Classroom Quiz" not in content):
-                continue
-            with_questions += 1
-            lines.append("")
-            lines.append("### " + head_text.strip())
-            lines.append(content.strip())
+        lines.extend(lec_sections)
 
     slack = _slack_export_data() if "psp" in label.lower() else None
+    math = _math_slack_data() if "math" in label.lower() else None
     slack_msgs = slack_sheet_n = slack_wb_q = 0
     slack_code_n = 0
     if slack:
@@ -1222,6 +1353,107 @@ def export_subject(name):
             lines.extend(slack["workbook"].splitlines())
             lines.append("```")
 
+    math_msgs = math_tracker_n = 0
+    if math:
+        math_msgs = sum(c["msgs"] for c in math["channels"])
+        math_tracker_n = len(math["tracker"])
+        lines.append("")
+        lines.append("---")
+        lines.append("## Official Math-1 syllabus (Slack "
+                     "#academic-announcement-26, read-only harvest "
+                     + str(math["captured"]) + ")")
+        if math["contest1"]:
+            lines.append("")
+            lines.append("### Math-1 Contest 1 — held 18 Sep 2026, "
+                         "9:00-11:00 AM")
+            lines.append(math["contest1"])
+        if math["contest2"]:
+            lines.append("")
+            lines.append("### Math-1 Contest 2 — Fri 23 Oct 2026, "
+                         "9:00-11:30 AM (Platform: Product)")
+            lines.append(math["contest2"])
+        if math["ia1"]:
+            lines.append("")
+            lines.append("### Math-1 IA-1 (written paper, from 19 Oct "
+                         "announcement)")
+            lines.append(math["ia1"])
+        if math["books"]:
+            lines.append("")
+            lines.append("### Course textbooks (shared #m1-26, 2 Sep; "
+                         "download from Slack — files need your Slack "
+                         "login, so not mirrored here)")
+            for b in math["books"]:
+                lines.append("- " + b)
+        if math["paper_url"]:
+            lines.append("")
+            lines.append("### Math-1 Contest 1 question paper "
+                         "(shared #m1-26, 25 Sep: M1_Contest_1_S_VYASA"
+                         ".pdf; full text extracted below — "
+                         "original needs Slack login)")
+            lines.append("Original: " + math["paper_url"])
+            if math["paper_text"]:
+                lines.append("")
+                lines.append("```")
+                lines.extend(math["paper_text"].splitlines())
+                lines.append("```")
+        if math.get("ws6_text"):
+            lines.append("")
+            lines.append("### Lecture Worksheet 6 — Congruence and "
+                         "Modular Arithmetic (shared #m1-26, 5 Oct; "
+                         "15 pages, full text extracted below — original "
+                         "needs Slack login)")
+            if math.get("ws6_url"):
+                lines.append("Original: " + math["ws6_url"])
+            lines.append("")
+            lines.append("```")
+            lines.extend(math["ws6_text"].splitlines())
+            lines.append("```")
+        if math["hint_url"]:
+            lines.append("")
+            lines.append("### Contest 2 hint image (shared #m1-26, "
+                         "today: hint for last question of today's "
+                         "contest)")
+            lines.append(math["hint_url"])
+        if math["tracker"]:
+            lines.append("")
+            lines.append("### Maths 1 Learning Tracker "
+                         "(Google Sheet, shared #academic-announcement"
+                         "-26 7 Sep / 18 Sep — view-only; File > Make a "
+                         "copy to tick your own progress) — "
+                         + str(math_tracker_n))
+            lines.append("Topic rows (Lecture | Sub-topics | Concept "
+                         "check):")
+            for row in math["tracker"]:
+                lec = (row.get("Lecture") or "").strip()
+                sub = (row.get("(Sub)Topics") or "").strip()
+                q = (row.get("Concept Check Question") or "").strip()
+                bit = "- " + (lec + ": " if lec else "") + sub
+                if q:
+                    bit += " — " + q
+                lines.append(bit)
+        if math["m1_blocks"]:
+            lines.append("")
+            lines.append("### #m1-26 — every message (" + str(
+                math["channels"][0]["msgs"] if math["channels"] else "?")
+                + ")")
+            for chan, body in math["m1_blocks"]:
+                lines.append("")
+                lines.append("```")
+                lines.extend(body.splitlines())
+                lines.append("```")
+        if math["mixed_blocks"]:
+            lines.append("")
+            lines.append("### Math-relevant messages from shared "
+                         "channels (#academic-announcement-26, "
+                         "#general-announcements-26, "
+                         "#student-progression-batch-a/b)")
+            for chan, body in math["mixed_blocks"]:
+                lines.append("")
+                lines.append("```")
+                lines.append("#" + chan)
+                lines.extend(body.splitlines())
+                lines.append("```")
+
     lines.append("")
     lines.append("---")
     lines.append("## WHERE THESE QUESTIONS CAME FROM (sources)")
@@ -1251,6 +1483,16 @@ def export_subject(name):
                      + " code-list problems + the workbook's "
                      + str(slack_wb_q) + " questions (Google Sheets + "
                      "Drive file fetched read-only).")
+    if math:
+        lines.append("- **Slack search harvest** (`slack_harvest.py`, "
+                     + str(math["captured"]) + ") — " + str(math_msgs)
+                     + " messages across #m1-26/#m1-b1 plus math blocks "
+                     "of #academic-announcement-26/#general-announcements"
+                     "-26/#student-progression-batch-a/b (read-only "
+                     "search; no Send-button use): official Contest 1/2 "
+                     "+ IA-1 syllabi, the Contest 1 paper's full text, "
+                     "the learning tracker's " + str(math_tracker_n)
+                     + " topic rows.")
 
     not_fetched = []
     lec_texts = []
@@ -1285,12 +1527,18 @@ def export_subject(name):
         lines.append("- Quiz contest questions only appear after "
                      "`Start Test` (graded, consumes an attempt): "
                      "open the Quiz Contests tab manually if you want "
-                     "these: PSP Contest 1, Wifi Demo, Demo_Contest, "
-                     "Mock Test")
+                     "these: " + (
+                         ", ".join(str(q.get("title"))
+                                   for q in quizzes) if quizzes
+                         else ("the Math-1 Quiz Contest listed on the "
+                               "course Quiz Contests tab"
+                               if "math" in label.lower()
+                               else "PSP Contest 1, Wifi Demo, "
+                                    "Demo_Contest, Mock Test")))
         lines.append("- What IS captured: all assignment questions ("
                      + str(total_q) + "), all in-class quiz questions "
-                     "shown above, all contest ASSIGNMENT texts (e.g. "
-                     "PSP Contest 2)")
+                     "shown above, all contest ASSIGNMENT texts"
+                     + (" (e.g. PSP Contest 2)" if slack else ""))
         if slack:
             lines.append("")
             lines.append("### Slack-given links (statements live at the "
@@ -1314,6 +1562,9 @@ def export_subject(name):
                      + str(slack_sheet_n) + " sheet problems, "
                      + str(slack_code_n) + " code-list problems, "
                      + str(slack_wb_q) + " workbook questions")
+    if math:
+        slack_bit = (", Slack: " + str(math_msgs) + " msgs, "
+                     + str(math_tracker_n) + " tracker topics")
     lines.append("TOTALS: " + str(total_q) + " assignment questions ("
                  + str(solved_q) + " solved), " + str(len(quizzes))
                  + " quizzes, " + str(len(no_text))
@@ -1338,6 +1589,10 @@ def export_subject(name):
         print("  slack: " + str(slack_msgs) + " msgs | sheet problems: "
               + str(slack_sheet_n) + " | code list: " + str(slack_code_n)
               + " | workbook questions: " + str(slack_wb_q))
+    if math:
+        print("  math slack: " + str(math_msgs) + " msgs | tracker rows: "
+              + str(math_tracker_n) + " | contest1 text: "
+              + ("yes" if math["paper_text"] else "not yet"))
     return 0
 
 

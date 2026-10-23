@@ -91,8 +91,35 @@ def open_channel(page, channel, before=None):
     query = "in:" + channel + " after:2026-08-01"
     if before:
         query += " before:" + before
-    page.locator('button[aria-label="Search"]').first.click(timeout=8000)
+    # a search modal left open from a previous window blocks the
+    # top-nav Search button — close it first
+    dlg = page.locator(
+        'div.ReactModalPortal [role="dialog"][aria-label="Search"]')
+    for _ in range(3):
+        try:
+            if dlg.count() and dlg.first.is_visible():
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(700)
+            else:
+                break
+        except Exception:
+            break
+    try:
+        page.locator('button[aria-label="Search"]').first.click(timeout=6000)
+    except Exception:
+        page.locator('button[aria-label="Search"]').first.click(
+            timeout=6000, force=True)
     page.wait_for_timeout(1500)
+    # make sure keystrokes land in the search input
+    try:
+        field = page.locator(
+            'div.ReactModalPortal input, div.ReactModalPortal '
+            '[contenteditable="true"]')
+        if field.count() and field.first.is_visible():
+            field.first.click(timeout=2000)
+            page.wait_for_timeout(300)
+    except Exception:
+        pass
     page.keyboard.type(query, delay=45)
     page.wait_for_timeout(1200)
     page.keyboard.press("Enter")        # turns query into chips
@@ -257,11 +284,19 @@ def harvest(channel, threads=False):
     expected = None
     used_before = set()
     no_growth_rounds = 0
+    failures = 0
     url = ""
-    for attempt in range(7):
+    for attempt in range(40):
         before = None if attempt == 0 else oldest_date(all_items)
         if before and before in used_before:
-            break
+            # a single day filled the whole 20-result page — step past it
+            steps = 0
+            while before and before in used_before and steps < 90:
+                before = (datetime.date.fromisoformat(before)
+                          - datetime.timedelta(days=1)).isoformat()
+                steps += 1
+            if not before or before in used_before:
+                break
         if before:
             used_before.add(before)
         with S.sync_playwright() as pw:
@@ -282,12 +317,22 @@ def harvest(channel, threads=False):
                 break
             items = collect(page)
             exp_this = page.evaluate(RESULTS_JS)
-            if attempt == 0:
-                expected = exp_this
             try:
                 ctx.close()
             except Exception:
                 pass
+        if exp_this is None and not items:
+            failures += 1
+            if before:
+                used_before.discard(before)
+            print("  window", attempt + 1, "failed to render — retrying ("
+                  + str(failures) + ")")
+            if failures >= 4:
+                break
+            continue
+        failures = 0
+        if expected is None:
+            expected = exp_this
         before_count = len(all_items)
         for key, txt in items.items():
             if key not in all_items or len(txt) > len(all_items[key]):
