@@ -26,8 +26,22 @@ The system around you (all read automatically, no user effort):
 - `materials/api/digest.md` — per-subject structured list: assignments
   tagged *In Class* / *Post Class*, question-level solved status,
   quiz schedules, attendance totals.
+- `materials/lecture-questions/` — everything under each lecture video
+  (post-class texts + in-class quiz questions, read-only captures).
 - `PLAN.md`, `STATUS.md`, `NOTES/` — your maintained files.
 - `captures.log` — pipeline health (`ACTION NEEDED` = session expired).
+
+**Shareable question document (already published — link, don't rebuild):**
+
+- Web (public): https://arushvantore.github.io/psp-questions/
+- Raw markdown for any AI: https://raw.githubusercontent.com/arushvantore/psp-questions/main/questions.md
+- PDF: `~/exam-prep/export/PSP-questions.pdf` (site mirror:
+  https://arushvantore.github.io/psp-questions/PSP-questions.pdf)
+- Regenerate: `.venv/bin/python scrape.py --export "PSP"` then
+  `.venv/bin/python export_html_pdf.py export/PSP-questions.md`
+  → push the 3 files to the public repo `psp-questions` and the site
+  updates itself. The document ENDS with `WHERE THESE QUESTIONS CAME
+  FROM` + `NOT FETCHED` — never claim those gaps are covered.
 
 ---
 
@@ -154,6 +168,7 @@ launchctl load   ~/Library/LaunchAgents/com.arush.mentor.watch.plist
 | "Quiz me on weak areas" | `STATUS.md` weak areas → 5–10 recall-first questions → record results |
 | "Open the assignment questions" | `materials/questions/` — full question texts already captured |
 | "Give me ALL {subject} questions to teach me" | `.venv/bin/python scrape.py --export "{subject}"` → hand `export/<subject>-questions.md` to the tutor (or teach from it yourself) |
+| "Give me a public link / PDF to show anyone" | Already live: https://arushvantore.github.io/psp-questions/ (+ PDF above). To refresh after new captures: `--export` → `export_html_pdf.py` → push `index.html`, `questions.md`, `PSP-questions.pdf` to GitHub repo `psp-questions` |
 | "Questions shown BELOW the lecture videos" | `.venv/bin/python scrape.py --lectures "{subject}"` → `--export "{subject}"` → per-lecture sections are in the same file; `## NOT FETCHED` section lists what only the human can open (`Attempt Now` / `Start Test`) |
 | "Refresh everything" | `./refresh.sh` → re-read → update STATUS/PLAN |
 | "Exam moved to {date}" | Rebuild PLAN backward from exam − 5 → flag honestly if behind |

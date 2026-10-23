@@ -1013,6 +1013,26 @@ def export_subject(name):
             lines.append("### " + head_text.strip())
             lines.append(content.strip())
 
+    lines.append("")
+    lines.append("---")
+    lines.append("## WHERE THESE QUESTIONS CAME FROM (sources)")
+    lines.append("- **Subject assignment pages / My Assignments + "
+                 "Assignment Contests API** — " + str(len(assignments))
+                 + " assignments, " + str(total_q) + " questions; full "
+                 "statement captured from each question's playground "
+                 "page (read-only visit) — " + str(total_q - len(no_text))
+                 + "/" + str(total_q) + " texts present.")
+    lines.append("- **Lecture pages** (Course Content sidebar list) — "
+                 + str(with_questions) + " of " + str(len(lecture_files))
+                 + " lecture windows carry content: post-class question "
+                 "text below the video (`Read More` expanded) and "
+                 "in-class quiz questions via read-only views only "
+                 "(Revise / View Solutions / Next-Previous walk — never "
+                 "Attempt/Start/Submit).")
+    lines.append("- **Assessments API** — " + str(len(quizzes))
+                 + " quiz schedules (title, window, XP earned). No "
+                 "question text in the API (hidden until test start).")
+
     not_fetched = []
     lec_texts = []
     for sid in matched_sids:
@@ -1048,9 +1068,10 @@ def export_subject(name):
                      "open the Quiz Contests tab manually if you want "
                      "these: PSP Contest 1, Wifi Demo, Demo_Contest, "
                      "Mock Test")
-        lines.append("- What IS captured: all assignment questions "
-                     "(100), all in-class quiz questions shown above, "
-                     "all contest ASSIGNMENT texts (PSP Contest 2)")
+        lines.append("- What IS captured: all assignment questions ("
+                     + str(total_q) + "), all in-class quiz questions "
+                     "shown above, all contest ASSIGNMENT texts (e.g. "
+                     "PSP Contest 2)")
 
     lines.append("")
     lines.append("---")
