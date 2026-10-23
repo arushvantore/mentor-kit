@@ -10,3 +10,4 @@ NOTES/*
 .DS_Store
 *.out
 __pycache__/
+export/

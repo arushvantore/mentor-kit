@@ -69,6 +69,7 @@ Then open a chat with any AI and paste one of the orders in
 | `.venv/bin/python scrape.py --watch` | Background daemon: **hot pages every 2 min** (dashboard, all assignments, all quizzes, question of the day, Slack) + **deep sweep every ~20 min** (every subject × every tab + opens new assignment/quiz rows to read them) | Always (launchd) |
 | `./refresh.sh` | One manual full sweep → `materials/live_*.md` | On demand |
 | `.venv/bin/python scrape.py --auto --hot` | One hot-only sweep | On demand |
+| `.venv/bin/python scrape.py --export "PSP B"` | One file with **every question of one subject** (in-class, post-class, contests, solved, due — full texts) → `export/<subject>-questions.md` | On demand (hand it to a teaching AI) |
 | `.venv/bin/python scrape.py <url> ...` | Login window (visible Chrome, **no button**) — sign in yourself, close when done | Only if a session expires |
 | `.venv/bin/python scrape.py --selftest` | Offline end-to-end check (4 PASS expected) | After setup or changes |
 

@@ -106,6 +106,8 @@ and question counts instead.
 ```sh
 ./refresh.sh                                    # one full manual sweep
 .venv/bin/python scrape.py --auto --hot          # one hot-only sweep
+.venv/bin/python scrape.py --export "PSP B"      # ALL questions of one
+                                                 # subject -> export/*.md
 .venv/bin/python scrape.py --selftest           # health: expect 4 PASS
 # if ACTION NEEDED (session expired):
 launchctl unload ~/Library/LaunchAgents/com.arush.mentor.watch.plist
@@ -148,6 +150,7 @@ launchctl load   ~/Library/LaunchAgents/com.arush.mentor.watch.plist
 | "Attendance of {subject}?" | Lectures capture ("N/M Attended") + digest `self_performance` |
 | "Quiz me on weak areas" | `STATUS.md` weak areas → 5–10 recall-first questions → record results |
 | "Open the assignment questions" | `materials/questions/` — full question texts already captured |
+| "Give me ALL {subject} questions to teach me" | `.venv/bin/python scrape.py --export "{subject}"` → hand `export/<subject>-questions.md` to the tutor (or teach from it yourself) |
 | "Refresh everything" | `./refresh.sh` → re-read → update STATUS/PLAN |
 | "Exam moved to {date}" | Rebuild PLAN backward from exam − 5 → flag honestly if behind |
 

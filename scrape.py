@@ -57,7 +57,7 @@ FORBIDDEN = ("logout", "signout", "sign-out", "delete-account", "unregister",
 ERROR_TEXTS = ("Couldn\u2019t load this page", "Couldn't load this page",
                "Page Not Found", "404")
 SUBTABS = ("Overview", "Lectures", "Assignments", "Quiz", "Contest")
-OPENABLE = ("subTab=Assignments", "subTab=Quiz",
+OPENABLE = ("subTab=Assignments", "subTab=Quiz", "subTab=Contest",
             "all_assignments", "all_assessments")
 HUB = "tjj12ybxo9tt"
 MAX_OPENS_PER_CYCLE = 70
@@ -253,7 +253,7 @@ ROW_JS = """
     seen.add(t);
     out.push(t);
   });
-  return out.slice(0, 60);
+  return out.slice(0, 250);
 }
 """
 
@@ -269,9 +269,15 @@ def open_questions(page, list_url, state, budget):
         if page.url.split("?")[0] != list_url.split("?")[0]:
             page.goto(list_url, wait_until="domcontentloaded", timeout=45000)
             page.wait_for_timeout(4500)
-        for _ in range(10):
+        seen_rows = -1
+        for _ in range(24):
             page.mouse.wheel(0, 2200)
             page.wait_for_timeout(300)
+            if _ % 4 == 3:
+                rows_now = page.evaluate(ROW_JS)
+                if len(rows_now) == seen_rows:
+                    break
+                seen_rows = len(rows_now)
         rows = page.evaluate(ROW_JS)
     except Exception as error:
         log("  open_questions scan failed: " + str(error))
@@ -307,6 +313,19 @@ def open_questions(page, list_url, state, budget):
                   c[c.length - 1].setAttribute('data-probe', '1');
                   return true;
                 }""", title)
+            if not found:
+                # contest/list rows: title lives in its own small div
+                lead = re.split(r"\s+(?=easy\b|medium\b|hard\b)", title,
+                                maxsplit=1, flags=re.IGNORECASE)[0].strip()
+                found = page.evaluate("""(t) => {
+                  const c = Array.from(document.querySelectorAll('div,span,a,td'))
+                    .filter(el => { const st = getComputedStyle(el);
+                      const v = (el.innerText || '').trim().replace(/\\s+/g, ' ');
+                      return st.cursor === 'pointer' && v === t; });
+                  if (!c.length) return false;
+                  c[c.length - 1].setAttribute('data-probe', '1');
+                  return true;
+                }""", lead)
             if not found:
                 continue
             before = len(page.context.pages)
@@ -564,7 +583,178 @@ def write_digest(data):
         + str(len(data["perf"])) + ")")
 
 
+# ---------- export: every question of one subject, one file ----------
 
+def export_subject(name):
+    """--export <subject>: one file with EVERY question of that subject
+    (in-class, post-class, solved, due) + full texts already captured."""
+    if not (API_DIR / "digest.json").exists():
+        print("No digest yet — run ./refresh.sh first.")
+        return 1
+    state = json.loads((API_DIR / "digest.json").read_text(encoding="utf-8"))
+    needle = name.strip().lower()
+    label = name.strip()
+    for line in read_lines(SUBJECTS_FILE):
+        parts = line.split("|")
+        if len(parts) == 2 and (needle == parts[0].strip().lower()
+                                or needle in parts[1].lower()
+                                or parts[1].lower() in needle):
+            label = parts[1].strip()
+            break
+
+    def is_this(item):
+        course = item.get("course") or {}
+        hay = (str(course.get("short_display_name")) + " "
+               + str(course.get("name"))).lower()
+        return needle in hay or label.lower() in hay
+
+    assignments = [a for a in state.get("assignments", {}).values()
+                   if is_this(a)]
+    quizzes = [a for a in state.get("assessments", {}).values()
+               if is_this(a)]
+    if not assignments and not quizzes:
+        print("No data found for '" + name + "'. Known subjects:")
+        for line in read_lines(SUBJECTS_FILE):
+            print("  " + line)
+        return 1
+
+    texts = {}
+    for path in sorted(QUESTIONS.glob("live_*.md")):
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if not raw.startswith("# "):
+            continue
+        header = raw.splitlines()[0][2:]
+        url = ""
+        for line in raw.splitlines()[1:6]:
+            if line.startswith("URL:"):
+                url = line.split("URL:", 1)[1].strip()
+        body = raw.split("\n---\n", 1)
+        body = body[1] if len(body) == 2 else raw
+        cut = body.find("Generated Expected Output")
+        if cut > 0:
+            body = body[:cut]
+        texts.setdefault(header, (url, body.strip()))
+
+    def find_text(qtitle):
+        for header, value in texts.items():
+            if header.startswith(qtitle):
+                return value
+        return None
+
+    def when(value):
+        if value in (None, "", "None"):
+            return "?"
+        text = str(value)
+        try:
+            if "T" in text:
+                return datetime.fromisoformat(
+                    text.replace("Z", "+00:00")).astimezone().strftime(
+                        "%Y-%m-%d %H:%M")
+            return datetime.fromtimestamp(
+                int(text) / 1000).strftime("%Y-%m-%d %H:%M")
+        except Exception:
+            return text[:16]
+
+    status_map = {3: "SOLVED", 1: "PARTIAL", 2: "NOT SOLVED"}
+    lines = ["# EVERY " + label + " question (portal, till now)",
+             "Generated: " + datetime.now().isoformat(timespec="seconds")
+             + " by `scrape.py --export " + name + "`",
+             "",
+             "For the AI tutor: teach these in due-date order. Status and",
+             "XP are the student's real portal state. Question text is",
+             "included in a code block wherever the tracker captured it;",
+             "questions without text are listed at the end.",
+             ""]
+    total_q = 0
+    solved_q = 0
+    no_text = []
+    assignments.sort(key=lambda a: str(a.get("end_timestamp")))
+    for a in assignments:
+        title = str(a.get("title"))
+        kind = "Post Class" if "Post Class" in title else (
+            "In Class" if "In Class" in title else (
+                "Contest" if "Contest" in title else "Other"))
+        title_clean = title.replace(" - Post Class", ""
+                                    ).replace(" - In Class", "")
+        questions = a.get("assignment_questions") or []
+        total_q += len(questions)
+        lines.append("---")
+        lines.append("## " + title_clean + "  [" + kind + "]  — due "
+                     + when(a.get("end_timestamp")))
+        for q in questions:
+            qtitle = str(q.get("question_title"))
+            status = status_map.get(q.get("attempt_status"), "UNKNOWN")
+            if q.get("earned_points", 0) >= (q.get("earnable_points")
+                                             or 0) and q.get(
+                                                 "earnable_points"):
+                status = "SOLVED"
+            if status == "SOLVED":
+                solved_q += 1
+            lines.append("")
+            lines.append("### " + qtitle + " — " + str(
+                q.get("earned_points")) + "/" + str(
+                q.get("earnable_points")) + " XP — " + status
+                + " — deadline " + when(q.get("deadline")))
+            if q.get("topics"):
+                lines.append("Topics: " + ", ".join(q["topics"]))
+            found = find_text(qtitle)
+            if found:
+                url, body = found
+                lines.append("")
+                if url:
+                    lines.append("URL: " + url)
+                lines.append("")
+                lines.append("```")
+                lines.append(body)
+                lines.append("```")
+            else:
+                no_text.append(qtitle)
+                lines.append("(full text not captured yet — tracker will "
+                             "open this row on its next sweep)")
+
+    if quizzes:
+        lines.append("")
+        lines.append("---")
+        lines.append("## Quizzes / quiz contests (" + str(len(quizzes))
+                     + ") — schedules only")
+        lines.append("(Portal shows quiz QUESTIONS only after starting a "
+                     "test — starting tests is forbidden, so no question "
+                     "text exists for these.)")
+        for quiz in sorted(quizzes, key=lambda x: str(x.get(
+                "start_timestamp"))):
+            xp = quiz.get("earnable_xp") or {}
+            lines.append("- " + str(quiz.get("title")) + " — "
+                         + when(quiz.get("start_timestamp")) + " -> "
+                         + when(quiz.get("end_timestamp")) + " — xp "
+                         + str(xp.get("earned_points")) + "/"
+                         + str(xp.get("earnable_points")))
+
+    lines.append("")
+    lines.append("---")
+    lines.append("TOTALS: " + str(total_q) + " assignment questions ("
+                 + str(solved_q) + " solved), " + str(len(quizzes))
+                 + " quizzes, " + str(len(no_text))
+                 + " questions without captured text.")
+    if no_text:
+        lines.append("Missing text: " + "; ".join(sorted(set(no_text))))
+
+    export_dir = BASE / "export"
+    export_dir.mkdir(exist_ok=True)
+    out_path = export_dir / (re.sub(r"[^A-Za-z0-9]+", "-", label).strip("-")
+                             + "-questions.md")
+    out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print("EXPORTED " + str(out_path))
+    print("  assignments: " + str(len(assignments)) + " | questions: "
+          + str(total_q) + " (" + str(solved_q) + " solved) | quizzes: "
+          + str(len(quizzes)) + " | texts included: "
+          + str(total_q - len(no_text)))
+    return 0
+
+
+# ---------- targets / subjects / discovery ----------
 
 def read_lines(path):
     if not path.exists():
@@ -792,6 +982,13 @@ if __name__ == "__main__":
 
     if flag("--selftest"):
         sys.exit(0 if selftest() else 1)
+
+    if flag("--export"):
+        subject = value("--export", "")
+        if not subject:
+            print("Usage: scrape.py --export \"PSP B\"  (or a course id)")
+            sys.exit(2)
+        sys.exit(export_subject(subject))
 
     profile = Path(value("--profile", str(PROFILE)))
 
