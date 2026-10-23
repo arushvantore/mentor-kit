@@ -70,6 +70,7 @@ Then open a chat with any AI and paste one of the orders in
 | `./refresh.sh` | One manual full sweep → `materials/live_*.md` | On demand |
 | `.venv/bin/python scrape.py --auto --hot` | One hot-only sweep | On demand |
 | `.venv/bin/python scrape.py --export "PSP B"` | One file with **every question of one subject** (in-class, post-class, contests, solved, due — full texts) → `export/<subject>-questions.md` | On demand (hand it to a teaching AI) |
+| `.venv/bin/python scrape.py --lectures "PSP"` | Harvest **everything under each lecture video** (in-class quiz questions via read-only views, post-class texts, `Read More` expanded) → `materials/lecture-questions/` (picked up by `--export`) | On demand; deep cycles repeat it (24 h per lecture) |
 | `.venv/bin/python scrape.py <url> ...` | Login window (visible Chrome, **no button**) — sign in yourself, close when done | Only if a session expires |
 | `.venv/bin/python scrape.py --selftest` | Offline end-to-end check (4 PASS expected) | After setup or changes |
 

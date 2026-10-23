@@ -583,6 +583,269 @@ def write_digest(data):
         + str(len(data["perf"])) + ")")
 
 
+# ---------- harvest what's below each lecture video ----------
+
+LECTQ_DIR = MATERIALS / "lecture-questions"
+LECTQ_STATE = LECTQ_DIR / "state.json"
+UNSAFE_CLICK = re.compile(r"attempt|start|submit|complete|resume|save|"
+                          r"register|pay|buy", re.IGNORECASE)
+
+
+def _load_json(path):
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _click_label(page, label):
+    """Click a UI label ONLY if it is read-only (never attempt/start/
+    submit/complete...). Matches exact text or text + count badge."""
+    if UNSAFE_CLICK.search(label):
+        return False
+    try:
+        found = page.evaluate("""(t) => {
+          const c = Array.from(document.querySelectorAll(
+              'div,span,a,button,td'))
+            .filter(el => {
+              if (getComputedStyle(el).cursor !== 'pointer') return false;
+              const v = (el.innerText || '').trim().replace(/\\s+/g, ' ');
+              return v === t || (v.startsWith(t + ' ')
+                && /^[\\d\\s]+$/.test(v.slice(t.length + 1)));
+            });
+          if (!c.length) return false;
+          c[c.length - 1].setAttribute('data-probe', '1');
+          return true;
+        }""", label)
+        if not found:
+            return False
+        page.click('[data-probe="1"]', timeout=5000)
+        page.wait_for_timeout(3000)
+        page.evaluate("""() => document.querySelectorAll('[data-probe]')
+            .forEach(e => e.removeAttribute('data-probe'))""")
+        return True
+    except Exception:
+        return False
+
+
+def _expand_read_more(page):
+    for _ in range(14):
+        try:
+            loc = page.get_by_text("Read More", exact=True)
+            if loc.count() == 0:
+                break
+            loc.nth(0).click(timeout=2500)
+            page.wait_for_timeout(500)
+        except Exception:
+            break
+
+
+def _walk_quiz(page, quiz_block):
+    """Quizzes show one question at a time with Previous/Next — walk
+    BOTH directions (read-only, safe) until QUESTION 1..total are all
+    captured (the portal can open a quiz mid-way, e.g. at 6/10)."""
+    fails = 0
+    for _attempt in range(60):
+        found = re.findall(r"QUESTION\s*(\d+)/(\d+)", quiz_block)
+        if not found:
+            break
+        seen = {int(a) for a, _b in found}
+        total = max(int(b) for _a, b in found)
+        if seen >= set(range(1, total + 1)):
+            break
+        label = ("Next" if max(seen) < total
+                 else "Previous" if min(seen) > 1 else None)
+        if label is None:
+            break
+        if not _click_label(page, label):
+            other = "Previous" if label == "Next" else "Next"
+            if not _click_label(page, other):
+                fails += 1
+                if fails >= 3:
+                    break
+                continue
+        nxt = read_text(page)
+        new_chunks = []
+        for marker in re.finditer(r"QUESTION\s*(\d+)/(\d+)", nxt):
+            k = int(marker.group(1))
+            if k in seen:
+                continue
+            start = marker.start()
+            end = nxt.find("Copyright", start)
+            new_chunks.append(nxt[start:end] if end > start
+                              else nxt[start:start + 4000])
+        if not new_chunks:
+            # stepping through already-seen questions (e.g. 10 -> 9 -> ...)
+            # is normal before reaching an unseen one — keep going a while
+            fails += 1
+            if fails > total:
+                break
+            continue
+        fails = 0
+        quiz_block += ("\n" + "\n").join(new_chunks)
+    return quiz_block
+
+
+def harvest_lectures(page, sid, state, budget):
+    """Visit lectures of subject sid; save EVERYTHING under the video:
+    in-class quiz questions (Revise view only — never Attempt/Start),
+    post-class / in-class assignment question text, quiz cards.
+    Returns number of lectures visited."""
+    hashes = []
+    try:
+        digest = json.loads((API_DIR / "digest.json").read_text(
+            encoding="utf-8"))
+        for item in (digest.get("lectures", {}).get(sid) or {}).values():
+            if item.get("hash"):
+                hashes.append(item["hash"])
+    except Exception:
+        pass
+    for key in state:
+        if key.startswith(sid + "_"):
+            hashes.append(key.split("_", 1)[1])
+    hashes = list(dict.fromkeys(hashes))
+    if not hashes:
+        log("  lecture harvest: no hashes known for " + sid)
+        return 0
+    visited = 0
+    i = 0
+    while i < len(hashes) and visited < budget:
+        lec_hash = hashes[i]
+        i += 1
+        key = sid + "_" + lec_hash
+        entry = state.get(key)
+        if entry and entry.get("seen"):
+            try:
+                if datetime.now() - datetime.fromisoformat(
+                        entry["seen"]) < timedelta(hours=24):
+                    continue
+            except Exception:
+                pass
+        url = ("https://my.newtonschool.co/course/" + sid + "/lecture/"
+               + lec_hash + "?lectureTab=assignment")
+        try:
+            page.goto(url, wait_until="domcontentloaded", timeout=45000)
+            page.wait_for_timeout(4500)
+        except Exception as error:
+            log("  lecture load failed: " + str(error)[:70])
+            continue
+        if looks_logged_out(page):
+            log("ACTION NEEDED: session expired at " + url
+                + " — stop the daemon and run a login window (MENTOR.md §6)")
+            break
+        visited += 1
+        # grow the lecture list from the Course Content sidebar
+        title = ""
+        try:
+            anchors = page.evaluate(
+                "() => Array.from(document.querySelectorAll('a'))"
+                ".map(a => a.getAttribute('href')||'')")
+            for href in anchors:
+                m = re.match(r"/course/" + re.escape(sid)
+                             + r"/lecture/([a-z0-9]+)(.*)", href)
+                if not m:
+                    continue
+                if m.group(1) not in hashes:
+                    hashes.append(m.group(1))
+                if m.group(1) == lec_hash and m.group(2):
+                    label = page.evaluate(
+                        """(h) => { const a = Array.from(
+                            document.querySelectorAll('a')).find(
+                            x => (x.getAttribute('href')||'').indexOf(h) === 0);
+                            return a ? (a.innerText||'') : ''; }""",
+                        "/lecture/" + lec_hash)
+                    title = label.split("\n")[0].strip()[:120]
+        except Exception:
+            pass
+        text = read_text(page)
+        start = text.find("Assignments")
+        end = text.find("Copyright", start if start >= 0 else 0)
+        block = (text[start:end] if start >= 0 and end > start
+                 else text[start:] if start >= 0 else "")
+        _expand_read_more(page)
+        text2 = read_text(page)
+        start2 = text2.find("Assignments")
+        end2 = text2.find("Copyright", start2 if start2 >= 0 else 0)
+        if start2 >= 0 and len(text2[start2:end2] if end2 > start2
+                              else text2[start2:]) > len(block):
+            block = (text2[start2:end2] if end2 > start2
+                     else text2[start2:])
+        quiz_block = ""
+        if "In-class Quizzes" in text2:
+            if _click_label(page, "In-class Quizzes"):
+                qtext = read_text(page)
+                qstart = qtext.find("In-class Quizzes")
+                qend = qtext.find("Copyright", qstart if qstart >= 0 else 0)
+                quiz_block = (qtext[qstart:qend] if qstart >= 0 and qend > 0
+                              else qtext[qstart:] if qstart >= 0
+                              else qtext[-3000:])
+                # one question at a time -> walk Next through all of them
+                quiz_block = _walk_quiz(page, quiz_block)
+                # read-only "Revise"/"View Solutions" shows questions +
+                # explanations when they aren't already on the page
+                if "QUESTION" not in quiz_block:
+                    label = None
+                    if "Revise" in quiz_block:
+                        label = "Revise"
+                    elif "View Solutions" in quiz_block:
+                        label = "View Solutions"
+                    if label and _click_label(page, label):
+                        page.wait_for_timeout(1500)
+                        rtext = read_text(page)
+                        rpos = -1
+                        for marker in ("QUESTION 1/", "QUESTION1/",
+                                       "Explanation:", "Classroom Quiz -"):
+                            rpos = rtext.find(marker)
+                            if rpos >= 0:
+                                break
+                        if rpos >= 0:
+                            rend = rtext.find("Copyright", rpos)
+                            piece = (rtext[rpos:rend] if rend > rpos
+                                     else rtext[rpos:])
+                            if "QUESTION" in piece or "Explanation" in piece:
+                                quiz_block += ("\n\n=== Revise view ("
+                                               "questions) ===\n" + piece)
+                                quiz_block = _walk_quiz(page, quiz_block)
+        has_q = ("Q1." in block or "QUESTION 1" in quiz_block
+                 or "QUESTION 1/1" in quiz_block
+                 or "Classroom Quiz" in quiz_block)
+        LECTQ_DIR.mkdir(exist_ok=True)
+        body = ("# " + (title or lec_hash) + "  [" + sid + "]\n"
+                "URL: " + url + "\n"
+                "Captured: " + datetime.now().isoformat(timespec="seconds")
+                + " by lecture harvester (read-only).\n\n---\n\n"
+                "=== Assignments tab (quiz cards + in-class + "
+                "post-class sections) ===\n" + block.strip() + "\n")
+        if quiz_block.strip():
+            body += ("\n=== In-class Quizzes tab ===\n"
+                     + quiz_block.strip() + "\n")
+        if not has_q:
+            body += "\n(no questions below this lecture at capture time)\n"
+        (LECTQ_DIR / (key + ".md")).write_text(body, encoding="utf-8")
+        state[key] = {"seen": datetime.now().isoformat(timespec="seconds"),
+                      "title": title, "questions": bool(has_q)}
+    return visited
+
+
+def _norm_text(value):
+    return re.sub(r"[^a-z0-9]", "", str(value).lower())
+
+
+def _matched_subjects(name):
+    needle = _norm_text(name)
+    out = []
+    for line in read_lines(SUBJECTS_FILE):
+        parts = line.split("|")
+        if len(parts) != 2:
+            continue
+        sid_norm = _norm_text(parts[0])
+        label_norm = _norm_text(parts[1])
+        if needle and (needle == sid_norm or needle in label_norm
+                       or label_norm in needle):
+            out.append((parts[0].strip(), parts[1].strip()))
+    return out
+
+
 # ---------- export: every question of one subject, one file ----------
 
 def export_subject(name):
@@ -593,14 +856,9 @@ def export_subject(name):
         return 1
     state = json.loads((API_DIR / "digest.json").read_text(encoding="utf-8"))
     needle = name.strip().lower()
-    label = name.strip()
-    for line in read_lines(SUBJECTS_FILE):
-        parts = line.split("|")
-        if len(parts) == 2 and (needle == parts[0].strip().lower()
-                                or needle in parts[1].lower()
-                                or parts[1].lower() in needle):
-            label = parts[1].strip()
-            break
+    matched = _matched_subjects(name)
+    label = matched[0][1] if len(matched) == 1 else name.strip()
+    matched_sids = [m[0] for m in matched] or []
 
     def is_this(item):
         course = item.get("course") or {}
@@ -732,12 +990,75 @@ def export_subject(name):
                          + str(xp.get("earned_points")) + "/"
                          + str(xp.get("earnable_points")))
 
+    lecture_files = []
+    for sid in matched_sids:
+        lecture_files.extend(sorted(LECTQ_DIR.glob(sid + "_*.md")))
+    with_questions = 0
+    if lecture_files:
+        lines.append("")
+        lines.append("---")
+        lines.append("## Questions below lecture videos (per lecture)")
+        for path in lecture_files:
+            raw = path.read_text(encoding="utf-8")
+            head = raw.split("\n---\n", 1)
+            head_text = head[0].lstrip("# ").split("\n")[0]
+            content = head[1] if len(head) == 2 else raw
+            if "(no questions below this lecture" in content and (
+                    "Q1." not in content
+                    and "QUESTION 1" not in content
+                    and "Classroom Quiz" not in content):
+                continue
+            with_questions += 1
+            lines.append("")
+            lines.append("### " + head_text.strip())
+            lines.append(content.strip())
+
+    not_fetched = []
+    lec_texts = []
+    for sid in matched_sids:
+        for path in LECTQ_DIR.glob(sid + "_*.md"):
+            lec_texts.append(path.read_text(encoding="utf-8"))
+    for quiz in quizzes:
+        frag = str(quiz.get("title") or "").split(" - ")[0][:45].lower()
+        if frag and not any(frag in text.lower() and "QUESTION 1/" in text
+                            for text in lec_texts):
+            not_fetched.append(str(quiz.get("title")))
+
+    if not_fetched or matched_sids:
+        lines.append("")
+        lines.append("---")
+        lines.append("## NOT FETCHED — open these yourself")
+        lines.append("(These sit behind `Attempt Now` / `Start Test` "
+                     "buttons. I never click those — they consume quiz "
+                     "attempts. Everything else above is complete.)")
+        if not_fetched:
+            lines.append("")
+            lines.append("### Revision quizzes whose questions never "
+                         "became visible (" + str(len(not_fetched))
+                         + ")")
+            lines.append("(quiz window closed while unattempted — try "
+                         "`Attempt Now` on that lecture's Assignments tab "
+                         "yourself, or check My Assessments)")
+            for title in not_fetched:
+                lines.append("- " + title)
+        lines.append("")
+        lines.append("### Quiz Contests tab (separate MCQ tests)")
+        lines.append("- Quiz contest questions only appear after "
+                     "`Start Test` (graded, consumes an attempt): "
+                     "open the Quiz Contests tab manually if you want "
+                     "these: PSP Contest 1, Wifi Demo, Demo_Contest, "
+                     "Mock Test")
+        lines.append("- What IS captured: all assignment questions "
+                     "(100), all in-class quiz questions shown above, "
+                     "all contest ASSIGNMENT texts (PSP Contest 2)")
+
     lines.append("")
     lines.append("---")
     lines.append("TOTALS: " + str(total_q) + " assignment questions ("
                  + str(solved_q) + " solved), " + str(len(quizzes))
                  + " quizzes, " + str(len(no_text))
-                 + " questions without captured text.")
+                 + " questions without captured text, "
+                 + str(with_questions) + " lecture windows with content.")
     if no_text:
         lines.append("Missing text: " + "; ".join(sorted(set(no_text))))
 
@@ -750,7 +1071,8 @@ def export_subject(name):
     print("  assignments: " + str(len(assignments)) + " | questions: "
           + str(total_q) + " (" + str(solved_q) + " solved) | quizzes: "
           + str(len(quizzes)) + " | texts included: "
-          + str(total_q - len(no_text)))
+          + str(total_q - len(no_text)) + " | lecture windows: "
+          + str(with_questions))
     return 0
 
 
@@ -857,6 +1179,20 @@ def run_cycle(deep=True, profile=PROFILE, hot_only=False):
                 spent += open_questions(page, url, state, budget - spent)
         if state:
             save_qstate(state)
+        if deep and not hot_only:
+            lec_state = _load_json(LECTQ_STATE)
+            lec_budget = 18
+            for sid in subject_ids():
+                if lec_budget <= 0:
+                    break
+                lec_budget -= harvest_lectures(page, sid, lec_state,
+                                               lec_budget)
+            if lec_state:
+                LECTQ_DIR.mkdir(exist_ok=True)
+                LECTQ_STATE.write_text(json.dumps(lec_state, indent=1),
+                                       encoding="utf-8")
+            log("Lecture harvest this cycle: " + str(18 - max(lec_budget, 0))
+                + " lecture(s) checked")
         write_digest(api_data)
         try:
             context.close()
@@ -989,6 +1325,49 @@ if __name__ == "__main__":
             print("Usage: scrape.py --export \"PSP B\"  (or a course id)")
             sys.exit(2)
         sys.exit(export_subject(subject))
+
+    if flag("--lectures"):
+        subject = value("--lectures", "")
+        if not subject:
+            print("Usage: scrape.py --lectures \"PSP B\"  (or 'psp' for"
+                  " several at once)")
+            sys.exit(2)
+        sid = None
+        matched = _matched_subjects(subject)
+        if matched:
+            sid = matched[0][0]
+        if not sid and re.fullmatch(r"[a-z0-9]{8,}",
+                                    subject.strip().lower()):
+            sid = subject.strip().lower()
+        if not sid:
+            print("Unknown subject '" + subject + "'. Known:")
+            for line in read_lines(SUBJECTS_FILE):
+                print("  " + line)
+            sys.exit(1)
+        lec_state = _load_json(LECTQ_STATE)
+        with sync_playwright() as pw:
+            context = pw.chromium.launch_persistent_context(
+                str(PROFILE), channel="chrome", headless=True,
+                viewport={"width": 1400, "height": 900},
+                args=STEALTH_ARGS)
+            context.add_init_script(STEALTH_JS)
+            page = (list(context.pages) or [context.new_page()])[0]
+            visited = harvest_lectures(page, sid, lec_state, budget=99)
+            try:
+                context.close()
+            except Exception:
+                pass
+        LECTQ_DIR.mkdir(exist_ok=True)
+        LECTQ_STATE.write_text(json.dumps(lec_state, indent=1),
+                               encoding="utf-8")
+        files = list(LECTQ_DIR.glob(sid + "_*.md"))
+        with_q = sum(1 for f in files
+                     if "Q1." in f.read_text(encoding="utf-8")
+                     or "QUESTION 1" in f.read_text(encoding="utf-8")
+                     or "Classroom Quiz" in f.read_text(encoding="utf-8"))
+        print("LECTURES checked: " + str(visited) + " | files: "
+              + str(len(files)) + " | with questions: " + str(with_q))
+        sys.exit(0)
 
     profile = Path(value("--profile", str(PROFILE)))
 
