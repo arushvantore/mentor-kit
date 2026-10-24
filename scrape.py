@@ -1066,8 +1066,10 @@ def _math_slack_data():
                 if re.search(r"precalculus|challenges_and|discrete_math|"
                              r"david_burton", fn, re.I):
                     title = fn.replace("_", " ").rsplit(".", 1)[0]
-                    if title not in books:
-                        books.append(title)
+                    if not any(t == title for t, _ in books):
+                        books.append((title, "https://" + url
+                                      if not url.startswith("http")
+                                      else url))
     tracker = []
     src = SLACK_DIR / "sources" / "math" / "maths-tracker.csv"
     try:
@@ -1380,10 +1382,17 @@ def export_subject(name):
         if math["books"]:
             lines.append("")
             lines.append("### Course textbooks (shared #m1-26, 2 Sep; "
-                         "download from Slack — files need your Slack "
-                         "login, so not mirrored here)")
+                         "all four downloaded locally to "
+                         "materials/slack-questions/sources/math/books/ "
+                         "— originals below need your Slack login, and "
+                         "the public site keeps only these links, not "
+                         "the copyrighted files)")
             for b in math["books"]:
-                lines.append("- " + b)
+                title, url = b if isinstance(b, (list, tuple)) else (b, "")
+                bit = "- " + title
+                if url:
+                    bit += " — " + url
+                lines.append(bit)
         if math["paper_url"]:
             lines.append("")
             lines.append("### Math-1 Contest 1 question paper "
