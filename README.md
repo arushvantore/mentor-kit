@@ -10,9 +10,9 @@
 **Sister project:** `schedule_planner` (the daily-plan engine — separate)
 
 **▶ The 60-second launch film** — schedule_planner, real terminal output,
-real data (nothing staged):
+real data (nothing staged): **[open the film](./launch.mp4)**
 
-<video src="./launch.mp4" controls muted preload="metadata" width="720"></video>
+<video src="https://github.com/arushvantore/mentor-kit/raw/main/launch.mp4" controls muted width="720"></video>
 
 ---
 
