@@ -16,6 +16,21 @@ real data (nothing staged). Click the preview to play **[launch.mp4](./launch.mp
 
 ---
 
+## How anyone can use this (the finished product)
+
+This is the finished product. Anyone who wants to use it just:
+
+1. Opens **Open WebUI**.
+2. Goes to **http://localhost:3000**.
+3. Picks a model.
+4. Sends a message like:
+
+**"Read MENTOR.md, then teach me DBMS — exam on {date}."**
+
+The AI reads the mentor kit and teaches.
+
+---
+
 ## How it works (the whole idea)
 
 ```
