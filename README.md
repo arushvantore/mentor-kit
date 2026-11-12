@@ -137,6 +137,7 @@ mentor-kit/  (~/exam-prep, Desktop link: ~/Desktop/exam-prep)
 ├── watch.sh         ← daemon entry point
 ├── refresh.sh       ← one manual full sweep
 ├── launchd/         ← com.arush.mentor.watch.plist (installed)
+├── btech-sem1/      ← B.Tech Sem 1 Master Knowledge System (study material + syllabus)
 ├── materials/       ← captures + questions/ + api/ (AI reads; gitignored)
 ├── NOTES/           ← AI-written revision notes per topic (gitignored)
 ├── captures.log     ← tracker log incl. ACTION NEEDED alerts (gitignored)
