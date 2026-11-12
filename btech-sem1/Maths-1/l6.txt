@@ -1,0 +1,410 @@
+Newton School of Technology Mathematics-1
+Congruence and Modular Arithmetic
+Worksheet 6
+Student Name: Student ID:
+This lecture will help you understand
+•quotient, remainder, and the meaning of modulo,
+•standard remainders and negative representatives,
+•cyclic patterns in modular arithmetic,
+•remainder families and congruence modulon,
+•properties of congruence and reduction of large calculations.
+“I see, I forget.
+I hear, I remember.
+I do, I understand.”
+— Confucius
+1
+Newton School of Technology Mathematics-1
+Quick Revision: GCD
+1. Two numbers have
+gcd(a, b) = 12,lcm(a, b) = 420.
+If one number is60, find the other.
+Answer:
+2. Use the Euclidean Algorithm to findgcd(252,198).
+Complete:
+252 = 198( ) +
+198 = ( ) +
+= ( ) +
+∴gcd(252,198) =
+The Machine in the Basement
+In this worksheet, we will explore division and remainders through a conversation between Ant and Gnam. As they
+interact with the strange machine, follow their questions and complete the tasks along the way.
+Warm-up Problem!
+One evening, Ant and Gnam find an old locked basement under the Mathematics Lab.
+Inside the basement, they see a strange machine. On the machine, something is written:
+“Feed me a number. I will tell you what is left behind.”
+Gnam:“What does that mean?”
+Ant:“It sounds like a remainder machine.”
+Gnam:“Remainder? Like division?”
+Ant:“Exactly. But this machine will take us much deeper than ordinary division.”
+The machine suddenly opens a small tray. Inside it are chocolates and empty boxes.
+Machine:“Each box holds exactly5chocolates. Put17chocolates inside me.”
+Gnam puts17chocolates into the machine. The machine asks them to complete its first message:
+17 = 5× +
+Full boxes= Leftover chocolates=
+The machine makes a soft sound and prints more number-trials. Ant says, “Let us record the full boxes and the leftovers
+each time.”
+Activity 1: Quotient and Remainder
+Number Divisor Quotient Remainder Division F orm
+17 5 17 = 5( ) +
+23 7 23 = 7( ) +
+36 8 36 = 8( ) +
+108 3 108 = 3( ) +
+129 7 129 = 7( ) +
+After looking at the machine’s answers, Ant asks:
+What do you notice about the remainder in each case?
+Y our Answer:
+After the warm-up, let us make our understanding of division more precise by recalling!
+2
+Newton School of Technology Mathematics-1
+Divide each number by5and write the remainder.
+5÷5⇒Remainder=
+6÷5⇒Remainder=
+7÷5⇒Remainder=
+8÷5⇒Remainder=
+9÷5⇒Remainder=
+So, when dividing by5, the possible remainders are :
+, , , , .
+Can we get any other possible remainder when dividing by5?
+□Yes□No
+Therefore, when dividing by5, the remainders go from
+0,1, ... .
+Now think generally.
+When a number is divided byn, the possible remainders are
+0,1,2, . . . , .
+These become thenpositions of our cycle.
+Scene 1: The Circular Track
+The machine lights up. A circular track appears on the floor with five positions:
+0,1,2,3,4.
+After4, the track returns to0.
+0
+1
+23
+4
+Gnam asks:“Why are there only five positions? Where did the other numbers go?”
+Ant explains:“They did not disappear. They are walking around the same cycle again and again. This is the idea of
+workingmodulo5: divide by5, ignore the complete rounds, and keep only the final position or remainder.”
+3
+Newton School of Technology Mathematics-1
+Definition
+Modulonmeans remainders after division byn. Equivalently, it means working on a cycle withnpositions:
+0,1,2, . . . , n−1.
+So modulo5means we only care about one of the five positions0,1,2,3,4.
+Starting from0, Gnam walks17steps around the track.
+17 = 5(3) + 2.
+After every5steps, he comes back to0. After15steps, he is back at0, and2more steps take him to position2.
+So, when Gnam walks17steps, he lands on position2.
+Now try a few more walks and check where Gnam lands each time.
+Use the cycle0→1→2→3→4→0.
+Complete the table.
+Steps Division Form Landing Position
+7 7 = 5( ) +
+12 12 = 5( ) +
+18 18 = 5( ) +
+23 23 = 5( ) +
+31 31 = 5( ) +
+What do you notice?
+The landing position is the same as the .
+Scene 2: The Strange Negative Walk
+Gnam now walks backwards on the same modulo5cycle.
+Starting at0, complete the landing positions.
+1) Walking1step backward from0lands on .
+2) Walking2steps backward from0lands on .
+3) Walking3steps backward from0lands on .
+4) Walking3steps backward reaches the same position as walking steps forward.
+Gnam asks:“Can walking backward also describe a position on the cycle?”
+Ant says:“Let us check this with a number.”
+Now look at17.
+First write17using the usual division form:
+17 = 5( ) +
+So the landing position of17on the modulo5cycle is .
+Now look at the next multiple of5after17.
+20 = 5( )
+How many steps backward from20gives17?
+4
+Newton School of Technology Mathematics-1
+So we can also write
+17 = 5( )−
+Now compare the two completed forms:
+17 = 5(3) + 2and17 = 5(4)−3.
+1) Do+2and−3give the same landing position on the modulo5cycle?
+□Yes□No
+2) If we describe the landing position by walking forward from0, which number do we use?
+□2□−3
+3) In division language, this forward landing position is called the standard remainder.
+So the standard remainder is .
+4) But −3is also useful. Instead of saying “2steps forward,” it describes the same landing position as “3steps
+.”
+Gnam says:“Let me check if I understood this game on another cycle.”
+Ant says:“Good. Try the modulo7cycle now.”
+1) On the modulo7cycle,10lands at the same position as .
+2) On the modulo7cycle,−3lands at the same position as .
+3) On the modulo7cycle,−21lands at the same position as .
+4) On the modulo7cycle,−23lands at the same position as .
+5) On the modulo7cycle,25lands at the same position as .
+6) On the modulo7cycle,−15lands at the same position as .
+Ant says:“Good. You now know that different numbers can land at the same position on a cycle. Let us see how a
+whole city uses this idea.”
+Scene 3: The Gate of Titan
+The machine opens a portal. Ant and Gnam enter Titan, a city where arithmetic wraps around.
+At the gate, a guard says:
+5
+Newton School of Technology Mathematics-1
+“Only citizens with remainder badge3modulo11may enter.”
+Gnam shows his card:25. The guard allows him inside.
+Gnam asks:“But my card says25, not3!”
+The guard replies:“On Titan, numbers that leave the same remainder are treated as members of the same family.”
+Ant asks:“The gate wants remainder badge3modulo11. Can more than one number have this badge?”
+□Yes□No
+Gnam says:“Let me check by moving full cycles of11.”
+3−22 = ,3−11 = ,3 = ,3 + 11 = ,3 + 22 = .
+Do all these numbers land at badge3modulo11?
+□Yes□No
+Look at the numbers above carefully.
+What pattern do you observe?
+Using this pattern, write the family of badge3modulo11.
+{. . . , , ,3, , , . . .}
+Ant asks:“Instead of listing forever, can you write the whole family using one expression?”
+Family of3modulo11 ={ : }.
+Gnam says:“Now I think I can write this for any badge.”
+If the badge isaand the cycle length isn, first write the nearby family members:
+{. . . , , , a, , , . . .}
+Now write the full family in one expression.
+Family ofamodulon={ : }.
+6
+Newton School of Technology Mathematics-1
+Scene 4: Gnam’s Difference Test
+Gnam says:“Numbers in the same family look different, but maybe their difference tells us something.”
+Ant says:“Let us test a few pairs first.”
+The following pairs belong to the same family modulo11. Complete the table.
+Pair Difference Divisible by11?
+25,3 25−3 = □Yes□No
+47,14 47−14 = □Yes□No
+36,25 36−25 = □Yes□No
+−8,3 −8−3 = □Yes□No
+What do you notice about the differences?
+Your Answer:
+Ant asks:“Can we explain why this always happens?”
+One member of the family of3modulo11can be written as
+3 + 11p.
+Write another member of the same family:
+Now subtract the two members and simplify.
+(3 + 11p)−
+What number is always a factor in the difference?
+Answer:
+So, if two numbers belong to the same family modulo11, their difference is divisible by .
+Ant finally introduces the symbol for“same cycle position.”Since25and3leave the same remainder when divided
+by11, mathematicians write
+25≡3 (mod 11).
+This is read as:“25 is congruent to 3 modulo 11.”
+Ant says:“We have seen the idea through families and differences. Now let us write the same idea formally.”
+What doesa≡b(modn)mean?
+Leta, b∈Zand letnbe a positive integer. We say that
+a≡b(modn)
+ifaandbleave the same remainder when divided byn. Equivalently,
+a≡b(modn)⇐ ⇒n|(a−b).
+Equivalently,a=b+knfor some integerk.
+7
+Newton School of Technology Mathematics-1
+Scene 5: The Modular Addition Game
+Ant and Gnam enter Titan’s playground.
+For this game, only totals that appear after a player’s turn are counted as previous totals.
+1. Player A chooses a positive integern.
+2. Player B decides who goes first.
+3. The running totalTstarts at0.
+4. On each turn, a player chooses any integermand adds it toT.
+5. A player loses if the new total is congruent to any previous total modulon.
+Understand the Game
+Alice choosesn= 5. Bob goes first.
+Round 1 2 3 4 5
+Alice −88 −23
+Bob 7 102 13
+Running Total
+T
+7 −81 21 −2 11
+Remainder
+mod5
+Bob loses because11≡21 (mod 5). What number could Bob have picked instead of13?
+Your Answer:
+Play the Game
+Player A: Player B: Modulusn:
+Round 1 2 3 4 5 6 7 8 9 10
+Player A
+Player B
+TotalT
+Remainder
+How many safe totals can appear before a remainder must repeat?
+Your Answer:
+Ant says:“In the game, only the final landing position mattered. Now let us see whether we can replace large
+numbers by smaller numbers before calculating.”
+8
+Newton School of Technology Mathematics-1
+Scene 6: Reduce First, Then Calculate
+Gnam says:“These numbers may look big, but maybe we do not need to carry the full numbers.”
+Ant says:“Let us check whether smaller representatives give the same landing position.”
+Work modulo11.
+First reduce the numbers.
+13≡ (mod 11) 27≡ (mod 11)
+Now check addition in two ways.
+13 + 27 = , ≡ (mod 11)
+2 + 5 = ,7≡ (mod 11)
+So,
+13 + 27≡ + (mod 11).
+Leta, b, c, d∈Zand letnis a positive integer.
+If
+a≡b(modn)andc≡d(modn),
+then
+a+c≡b+d(modn).
+Now, check subtraction in two ways.
+27−13 = , ≡ (mod 11)
+5−2 , ≡ (mod 11)
+So,
+27−13≡ − (mod 11).
+Leta, b, c, d∈Zand letnis a positive integer.
+If
+a≡b(modn)andc≡d(modn),
+then
+a−c≡b−d(modn).
+Now, check multiplication in two ways.
+13·27 = , ≡ (mod 11)
+2·5 = , ≡ (mod 11)
+So,
+13·27≡ · (mod 11).
+9
+Newton School of Technology Mathematics-1
+Leta, b, c, d∈Zand letnis a positive integer.
+If
+a≡b(modn)andc≡d(modn),
+then
+ac≡bd(modn).
+Now multiply both sides by the same number.
+13≡ (mod 11)
+Multiply both sides by4.
+4·13 = , ≡ (mod 11)
+4·2 = , ≡ (mod 11)
+So,
+4·13≡ · (mod 11).
+Leta, b∈Zand letnis a positive integer.
+If
+a≡b(modn),
+then for every integerk,
+ka≡kb(modn).
+Now, raise both sides to the same power.
+13≡ (mod 11)
+Square both sides.
+132 = , ≡ (mod 11)
+22 = , ≡ (mod 11)
+So,
+132 ≡ (mod 11).
+Leta, b∈Zand letnis a positive integer.
+If
+a≡b(modn),
+then for every positive integerk,
+ak ≡b k (modn).
+Now, check a chain of same-family numbers.
+24≡ (mod 11) 13≡ (mod 11)
+So,
+24≡13 (mod 11)and13≡2 (mod 11).
+Therefore,
+10
+Newton School of Technology Mathematics-1
+24≡ (mod 11).
+Leta, b∈Zand letnis a positive integer.
+If
+a≡b(modn)andb≡c(modn),
+then
+a≡c(modn).
+Now at another gate of Titan, the cycle length is6. The guard shows Gnam a strange equality.
+2·1 = 2·4 =
+Now check their landing positions on the modulo6cycle.
+2·1≡ (mod 6) 2·4≡ (mod 6)
+So we get
+2·1≡2·4 (mod 6).
+Gnam asks:“Since both sides have2, can I cancel it?”
+Can we write this?
+1≡4 (mod 6)
+□Yes□No
+Check the landing positions of1and4on the modulo6cycle.
+1≡ (mod 6) 4≡ (mod 6)
+Are they the same?
+□Yes□No
+So, can we always cancel a common factor in congruences?
+□Yes□No
+Note
+General Conclusion.
+Leta, b, k∈Zandnis a positive integer, wherenis the cycle length. Letd= gcd(k, n). Then
+ka≡kb(modn)⇐ ⇒a≡b(modn/d).
+In particular, ifgcd(k, n) = 1, then
+ka≡kb(modn) =⇒a≡b(modn).
+Thus, a common factor can be cancelled without changing the modulus when it is coprime to the modulus.
+11
+Newton School of Technology Mathematics-1
+Practice Problems
+Question 1.Find the remainder of46 100 when divided by5.
+Your Answer:
+Question 2.A number is calledthreevenif it leaves remainder0when divided by3,throdd1if it leaves remainder
+1, andthrodd2if it leaves remainder2.
+Complete the following modulo3, and then name the type of the answer.
+threeven+throdd1≡ (mod 3)⇒threeven+throdd1 is of type
+threeven+throdd2≡ (mod 3)⇒threeven+throdd2 is of type
+throdd1−throdd2≡ (mod 3)⇒throdd1−throdd2 is of type
+throdd2−throdd1≡ (mod 3)⇒throdd2−throdd1 is of type
+threeven×throdd1≡ (mod 3)⇒threeven×throdd1 is of type
+throdd1×throdd2≡ (mod 3)⇒throdd1×throdd2 is of type
+Explain one rule out of all.
+Your Answer:
+12
+Newton School of Technology Mathematics-1
+Question 3.Mary enters a sleep chamber at6pm. The chamber has a12-hour clock. She sets the timer for76hours.
+At what time will the alarm ring?
+Your Answer:
+Question 4.Sam starts eating green eggs and ham on Monday. Consider Monday as Day1. He continues eating
+them for200days.
+On which day of the week will he stop?
+Your Answer:
+Question 5.A6 × 6chessboard is coloured black and white in the usual alternating pattern. Two opposite corner
+squares are removed.
+Can the remaining34squares be covered exactly by17dominoes, where each domino covers two adjacent squares?
+Justify your answer.
+Your Answer:
+Question 6.Joanna starts by facingwest. She rotates counterclockwise by7110◦.
+Cycle length for angles=
+After reducing7110 ◦ using this cycle length, what direction will Joanna face? Justify your answer.
+Your Answer:
+13
+Newton School of Technology Mathematics-1
+A Frightful Halloween
+Question 7.On a frightful Halloween night, Todd is waiting outside a haunted house. His friends count the ghosts,
+but they give him only remainder clues.
+Eileen counted the ghosts by3’s and found2left over.
+Jane counted the ghosts by5’s and found3left over.
+Eric counted the ghosts by19’s and found7left over.
+Letxbe the number of ghosts. Then
+x≡2 (mod 3), x≡3 (mod 5), x≡7 (mod 19).
+What is the smallest possible number of ghosts?
+Your Answer:
+Question 8.Some soldiers are standing in a group.
+Letxbe the total number of soldiers.
+When they line up in rows of5,2soldiers are left over.
+When they line up in rows of7,4soldiers are left over.
+The total number of soldiers is less than100.
+Find all possible values ofx.
+Your Answer:
+14
+Newton School of Technology Mathematics-1
+Gnam:“So remainder is not just what is left after division. It is also a position in a cycle.”
+Ant:“Yes. Modular arithmetic is the mathematics of cycles.”
+Gnam:“And now big numbers do not look so big anymore.”
+Why Should an Engineer Care?
+Modular arithmetic is one of the hidden tools behind modern computing and Artificial Intelligence.
+• Cryptography:Secure communication on the internet (RSA, digital signatures, blockchain) relies heavily on
+modular arithmetic.
+• Computer Arithmetic:Computers store numbers using a fixed number of bits. Overflow behaves like
+arithmetic modulo2 n.
+• Error Detection and Coding:QR codes, communication systems, and data storage use modular arithmetic
+to detect and correct errors.
+• Machine Learning Systems:Large-scale AI software relies on efficient numerical computation, where
+modular ideas frequently appear in optimization, hashing, indexing, and distributed systems.
+In short:whenever a system wraps around, repeats in cycles, encrypts information, hashes data, or performs
+efficient large-number computations, modular arithmetic is working behind the scenes.
+End of Worksheet
+15

@@ -1,0 +1,126 @@
+Your Courses
+Explore
+Today's Question
+AI Tryouts
+Coderush
+Games
+Playground
+Start your career in Data Science through our DS Program. Applications open.
+5000+ people have registered
+Register Now
+Your Courses
+Show All
+STARTED: 17 Aug 2026, 4:00 pm
+Newton School of Technology'26 (CS) (SVYASA)
+Enrolled
+Continue Learning
+STARTED: 1 Oct 2026, 6:00 pm
+Newton School of Technology'26
+Screening Passed
+Continue Learning
+Ace your next tech interview with Tryouts
+Practice with audio answers and get realtime feedback from Newton AI.
+Try Now
+Elevate Your Interview Readiness with 250+ interview asked questions from different comapnies.
+0% Done
+HTML CSS
+Topics - Semantic HTML, Base Tags, CSS Selectors, Styling, CSS Layout, Position, Responsive Design, HTML Table Elements, HTML Forms, Lists, Media, Tags And Attributes
+Asked in
+Practice Now
+0% Done
+React/Redux
+Topics - Class based components, Working with APIs(React), Redux Intro, Redux vs React Context, Redux Actions & reducers, Context API, React Basics, Redux Store & Provider, Redux Middleware, React Optimization, Props and Adding JS Logic, React State
+Asked in
+Practice Now
+0% Done
+JavaScript
+Topics - JS Basics, Js Advanced, JS Prototypes, JavaScript Array, Execution Context and Call Stack, JavaScript DOM Manipulation, JavaScript Functions
+Asked in
+Practice Now
+0% Done
+Node.js
+Topics - Introduction to NodeJS & NPM, Backend-Development Introduction, How NodeJS Works?, Building RESTful API's Using Express - CRUD for Ecommerce API, Advanced Express & MVC Architecture, CRUD Operations Using Mongoose & MongoDB, Advanced Mongoose, Data Validation, Mongoose Modelling, Authentication & Authorisation, Error Handling, Athena Global Technologies Limited
+Asked in
+Practice Now
+0% Done
+Soft Skills
+Topics - Soft skills, Decision-making, Interpersonal communication, Communication Skills, Time management
+Asked in
+Practice Now
+0% Done
+Spreadsheet
+Topics - MS Excel, Excel Date & Time Functions, Cell referencing, Pivot Tables, Aggregation functions, Conditional Formatting, Conditional Aggregations, Array Formulas, Data Visualisation in Excel
+Asked in
+Practice Now
+0% Done
+SQL
+Topics - SQL Introduction, Emulus, SQL Left (Outer) Join, SQL - CASE Statement, SQL - DML, SQL Subqueries, DBMS ACID Properties, Aggregation (SQL)
+Asked in
+Practice Now
+4,200+
+Total active users
+10,000+
+Total Questions Attempted
+Today's Question
+Grow your coding skills by solving question of the day and build an impressive streak.
+Solve Today’s Question
+QUESTION OF THE DAY
+Clockwise Next Peak
+CHALLENGE ENDS IN
+10 HRS
+:
+54 MIN
+:
+12 SEC
+50 people have attempted
+Solve Now
+STREAK
+Build your Streak
+Solve questions daily and brag about your streak on social media
+Games - A fun way to learn code
+Play games designed to make learning fun & enhance your coding skills.
+Play Now
+10,000+
+people have started learning through block coding.
+Understand the basics of code, simply by playing games.
+Play Now
+Code with our online compilers
+Run code instantly, anytime, anywhere. Whether you're a beginner or an experienced coder you can run your code without setting up anything.
+Explore
+Programming
+C, C++, Java, Python, GoLang, PHP, Ruby, Rust, Swift, Typescript and more
+Frontend
+HTML/CSS/JS Project, React Js, Angular, React Ts, Vue JS, Vite React, Astro
+Backend
+Node JS, Django, Flask, Springboot
+Data Tools
+Jupyter Notebook, MySQL, Spreadsheet, Python Compiler
+Explore Our Top Free Courses
+Learn at your own pace from courses taught by top industry experts.
+Explore All Courses
+BEGINNER
+The complete python course for beginners
+Open
+Start for Free
+BEGINNER
+Database Management and SQL
+Open
+Start for Free
+BEGINNER
+Newton School's Introduction to Java Programming
+Open
+Start for Free
+BEGINNER
+Develop your first game in 99 minutes!
+Open
+Start for Free
+BEGINNER
+SQL - Self Learning
+Gamified
+Start for Free
+Copyright © 2026 Incanus Technologies Pvt. Ltd.
+All rights reserved.
+Legal
+Support
+Terms & Conditions
+Privacy Policy

@@ -1,0 +1,146 @@
+Swami Vivek¯ ananda Yoga Anusandh¯ ana
+Sa ˙ msth¯ ana
+(S-VYASA)
+(Deemed to be University)
+USN
+Examination M1 Contest Academic Y ear 2026–2027
+Programme B.Tech Specialization AI
+Semester I Date of Examination 18/09/2026
+Course Code Session
+Course Name Mathematics for Problem Solving
+Name: Programme/Section:
+Maximum Duration:90 minutesMaximum Marks:35
+Instructions:
+1. All questions are compulsory. Assume all variables are real unless stated otherwise.
+2. In Section A, select one correct option; in Section B, write the required value or expression.
+3. In Section C, match each statement with the correct numbered expression.
+4. Show clear reasoning and working in Section D.
+Section A: Multiple-Choice Questions 5 Q×1 M = 5 M
+Que.
+No. Questions CO RBTL Marks
+1 A company sells a video game. If its price isprupees, the company estimates that
+it will sell 20,000−500pgames. Which expression represents the revenue?
+A)(20,000−500p) +pB)(20,000−500p)−p
+C) 20,000−500pp D)p(20,000−500p)
+CO1 2 1
+2 The linesy=xandy= 3xpass through the origin. A student claims that the
+slope of a line bisecting the angle between them is (1 + 3)/2 = 2. Why is this
+reasoning incorrect?
+A)Slopes should be multiplied rather than averaged.
+B)An angle bisector averages the angles made with thex-axis, not their slopes;
+slope is the tangent of the angle.
+C)The correct slope must be
+√
+3, the geometric mean of the slopes.
+D)A line through the origin cannot have the formy=mx.
+CO1 3 1
+3 Letp(x) =x 2 +ax+bhave rootscandd. Define
+q(x) =x 2 + (2c+a)x+c 2 +ac+b.
+Which of the following are roots of q(x)?
+A)Its roots are 0 andd−c.B)Its roots arecandd+c.
+C)Its roots arec 2 andd 2.D)It has the same roots asp(x).
+CO2 3 1
+1/4
+Que.
+No. Questions CO RBTL Marks
+4 Ifa < b, which statement is always true?
+A)−2a <−2bB)a+ 7< b+ 7
+C)a 2 < b2 D) 1a > 1b
+CO3 2 1
+5 The graph ofy=x 2 −4x+ktouches thex-axis at exactly one point. Which
+condition must hold?
+A)The discriminant is negative.B)The discriminant is zero.
+C)k= 0.D)The roots have opposite signs.
+CO2 2 1
+Section B: Fill in the Blanks 5 Q×1 M = 5 M
+Que.
+No. Questions CO RBTL Marks
+6 A falling object travelsd= 16t 2 feet aftertseconds. After 6 seconds, it has
+travelled feet.
+CO2 2 1
+7 Aarav and Meera have positive integer agesxandy, and both are at least 3 years
+old. The cluesx+y= 12 and “two years ago, the sum of their ages was 8” allow
+different ordered pairs (x, y).
+CO1 3 1
+8 A square has side lengthx. Four 1×1 corner squares are removed. The area of
+the remaining region is .
+CO1 2 1
+9 If 1x >0, thenxis . CO3 2 1
+10 The equationx 2 + (k−3)x+k= 0 has equal roots. The sum of all possible values
+ofkis .
+CO2 3 1
+2/4
+Section C: Match the Following 1 Q×5 M = 5 M
+Que.
+No. Questions CO RBTL Marks
+11 A student club sends a fundraising appeal tonstudents and sets a target ofT
+rupees. Match each description in Column A with its expression in Column B.
+Column A Column B
+A.Amount raised on reaching half the
+target
+1.T+ 500
+B.Amount raised if every student gives
+Rs. 50
+2. T2
+C.Amount raised if the club exceeds its
+target by Rs. 500
+3.25n
+D.Amount still required after every
+student gives Rs. 50
+4.50n
+E.Amount raised if half the students
+give Rs. 50
+5.T−50n
+CO1 2 5
+Section D: Attempt the Following Questions 5 Q×4 M = 20 M
+Que.
+No. Questions CO RBTL Marks
+12 Saira has the following pieces:
+•one square of sidexunits;
+•eight rectangular strips, each measuringx×1 units; and
+•fifteen squares, each of side 1 unit.
+She claims that all the pieces can be arranged, without gaps or overlaps, to form
+one large rectangle.
+CO1 3 4
+(i)Write an algebraic expression for the total area of all the pieces. (2)
+(ii)Use the expression to determine the length and breadth of the resulting
+rectangle in terms ofx.
+(2)
+13 The first three steps of a growing square pattern contain 1, 4 and 9 small squares
+respectively.
+Step 1 Step 2 Step 3
+CO1 3 4
+(i)Write an equation relating the step numbernand the number of squaresy,
+and explain how it represents the pattern.
+(2)
+(ii)Determine the numbers of small squares in Steps 4 and 15. (2)
+3/4
+Que.
+No. Questions CO RBTL Marks
+14 Intelligence Quotient is calculated using
+IQ = Mental AgeChronological Age ×100.
+CO3 3 4
+(i)For children of chronological age 15 years whose IQ satisfies 90≤IQ≤150,
+determine the possible range of mental age.
+(2)
+(ii)For children of chronological age 12 years whose mental age satisfies
+9≤MA≤15, determine the possible IQ range.
+(2)
+15 A model rocket is launched from a platform. Its height above the ground aftert
+seconds is
+h(t) =−5t 2 + 20t+ 25.
+CO2 3 4
+(i)Find the zeros ofh(t) and interpret the physically meaningful zero. (2)
+(ii)Find the maximum height without using calculus. (1)
+(iii)A student calculatesh(6) =−35 and claims the rocket is 35 m underground.
+Is this interpretation correct? Explain.
+(1)
+16 At the Word Store, consonants are free, while each vowelA, E, I, O, Uhas its own
+fixed price. The following word prices are known:
+Word BANANA MATRIX CUBIC PENCIL ROBOT
+Cost (Rs.) 9 7 9 10 4
+Determine the cost of the wordEDUCA TION. Your solution must explain how
+the given word prices determine the required vowel prices; simply stating the final
+cost is not sufficient.
+CO1 4 4
+4/4
