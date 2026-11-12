@@ -9,6 +9,11 @@
 **Repo:** this one (private — contains tooling, not your personal captures)
 **Sister project:** `schedule_planner` (the daily-plan engine — separate)
 
+**▶ The 60-second launch film** — schedule_planner, real terminal output,
+real data (nothing staged). Click the preview to play **[launch.mp4](./launch.mp4)**:
+
+[![schedule_planner launch film preview](./preview.gif)](./launch.mp4)
+
 ---
 
 ## How it works (the whole idea)
