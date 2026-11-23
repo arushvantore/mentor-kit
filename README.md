@@ -1,4 +1,4 @@
-# Mentor Kit — your AI mentor with live portal + Slack awareness
+# RAG Mentor Kit — your AI mentor with live portal + Slack awareness
 
 > Hand this repo to ANY AI assistant (with file access on this Mac) and say:
 > **"Read MENTOR.md, then teach me {subject} — exam on {date}."**
